@@ -141,7 +141,8 @@ NOTNULL((1, 2)) void sha256d(unsigned char *out, const unsigned char *src, unsig
   sha_update(&ctx, out, 32);
   sha_finalize(&ctx, out);
 }
- NOTNULL((1, 2, 3)) void pair_sha256(unsigned char *out, unsigned char *e1, unsigned char *e2) {
+
+NOTNULL((1, 2, 3)) void pair_sha256(unsigned char *out, unsigned char *e1, unsigned char *e2) {
   unsigned char content[64];
   memcpy(content, e1, 32);
   memcpy(content + 32, e2, 32);
