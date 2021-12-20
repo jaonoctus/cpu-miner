@@ -5,30 +5,20 @@
 #include <string.h>
 #include <json-c/json.h>
 #include <time.h>
-#include "sha2.c"
 #include <unistd.h>
 #include <assert.h>
-#include "transaction.c"
 #include <pthread.h>
-//How many lending 0's, if you want 4 0's, use 0x0000ffff
-#define TARGET 0x00000000
+
+#include "block.h"
+#include "miner.h"
+#include "transaction.c"
+#include "sha2.h"
 
 #define GET_I(root,i) json_object_array_get_idx(root, i)
 #define ADD(root, data) json_object_array_add(root, data)
 #define MAX_RETRY 10
 
-//This is an internal representation of a block
-struct block_t {
-  int version;
-  unsigned char prevBlockHash[32];
-  unsigned char merkleRoot[32];
-  unsigned int timestamp;
-  unsigned int bits;
-  unsigned int nonce;
-  unsigned int tx_count;
-  unsigned char **tx;
-  unsigned int bytes;
-};
+
 //Bitcoind's auth cookie
 char cookie[76] = {0}; 
 //Some useful constants that will be used during rpc stuff
@@ -220,43 +210,12 @@ NOTNULL((1, 2)) void getRawTransactionHash(unsigned char out[32], unsigned char 
   str2bytes(out, in, 64);
 }
 
-NOTNULL((1, 4)) void mine(const unsigned char blockBinIn[80], unsigned int start, unsigned int end, int *flag) {
-
-  unsigned char hash[32], blockBin[80], hashfinal[32];
-  memcpy(blockBin, blockBinIn, 80);
-  ((struct block_t *) blockBin)->nonce = start;
-  
-  do{
-    ((struct block_t *) blockBin)->nonce++;
-    sha256d(hash, blockBin, 80);
-  } while((*((unsigned int *)(hash + 28))) > TARGET && *flag == 0 );
-
-
-  ((struct block_t *) blockBinIn)->nonce = ((struct block_t *) blockBin)->nonce;
-  be2le(hashfinal, hash);
-  
-  if ( *flag == 0  ) {
-    submitBlockHeader(blockBin);
-
-    printf("Found!: ");
-    for (unsigned int i = 0; i < 32; ++i)
-      printf("%02x", hashfinal[i]);
-    printf("\n");
-    *flag = 1;
-  }
-
-
-  return;
-};
-
 NOTNULL((1)) void destroyBlock(struct block_t *block) {
   for(int i = 0; i < block->tx_count; ++i) {
     free(block->tx[i]);
   }
   free(block->tx);
 }
-
-
 __attribute__((__warn_unused_result__)) struct block_t createBlock() {
   struct memory readBuffer;
   
@@ -483,9 +442,7 @@ start: {
   memcpy(ser_block_header + 76, &block.nonce, sizeof(int));
 
   //This function does the magic of mining
-  mine(ser_block_header, 0, 100, &flag);
-
-
+  mine(ser_block_header, 0, 100, &flag, submitBlockHeader);
 
   //1 - We found a block, 2 - Someone else found a block
   if(flag == 1) {

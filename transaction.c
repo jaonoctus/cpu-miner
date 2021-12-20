@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
+
+#include "sha2.h"
 
 const void str2bytes(unsigned char *out, const unsigned char *str, int size);
 #define NOTNULL(x) __nonnull (x)
@@ -53,6 +56,7 @@ int getSerSize(struct coinbase_t coinbase) {
   }
   size += 1;   // nOutputs
   for (unsigned register int i = 0; i < coinbase.nOutputs; ++i) {
+    /* Something really strange happens when I try add +8 from the value, it actually only works without then */
     size += 1; // spkLength
     size += coinbase.outputs[i].spkLength; //spk
   }
@@ -60,12 +64,13 @@ int getSerSize(struct coinbase_t coinbase) {
 
   return size * 2;  // each byte takes up 2 chars when hex-encoded
 }
-
+/** Some serialization methods
+ * @todo: Maybe create a separate file for this
+ */
 int serByteArray(char *out, const unsigned char *bytes, int len) {
     for (unsigned register int i = 0; i < len; ++i) {
       sprintf(out + (2 * i), "%02x", (__builtin_bswap16(bytes[i]) >> 8));
-    }
-    
+    } 
     return len * 2;
 }
 
@@ -211,6 +216,8 @@ NOTNULL((1)) void addNewOutput(struct coinbase_t *coinbase, struct output_t outp
 }
 
 NOTNULL((1)) void destroyTransaction(const struct coinbase_t *transaction) {
+  assert(transaction != NULL && transaction->inputs.sigScript != NULL);
+
   free(transaction->inputs.sigScript);
   for (unsigned register int i = 0; i < transaction->nOutputs; ++i) {
     free(transaction->outputs[i].spk);

@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
+#ifndef SHA2_C
+#define SHA2_C
 
 #define ROTR(value, bits) (((value) >> (bits)) | ((value) << (32 - (bits))))
 #define Ch() (E & F) ^ (~E & G)
@@ -176,4 +178,5 @@ int main()
     printf("\n");
     return 0;
 }
-#endif
+#endif  //test
+#endif  //sha2_c
