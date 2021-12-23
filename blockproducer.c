@@ -28,7 +28,7 @@ static const char *getBlock            =  (char *) "{\"jsonrpc\":\"1.0\",\"id\":
 static const char *submitHeader        =  (char *) "{\"jsonrpc\":\"1.0\",\"id\":\"curltext\",\"method\":\"submitheader\",\"params\":[\"%s\"]}";
 static const char *submitBlockBase     =  (char *) "{\"jsonrpc\":\"1.0\",\"id\":\"curltext\",\"method\":\"submitblock\",\"params\":[\"%s\"]}";
 //Payout address
-static const char *address             =  (char *) "001470c28c2699b80334c66cb987ba01e113bfa375b3";  //A spk, actually
+static const char *address             =  (char *) "0014546a43c83cc73cb785ed722ad613f6f3c4a6b3e2";  //A spk, actually
 struct curl_slist *headers;
 
 static const unsigned char mask[] = {
@@ -287,7 +287,7 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock() {
     .version = 0x02000000,
     .prevBlockHash = {0},
     .merkleRoot = {0},
-    .timestamp = time(NULL) + (21 *  60),
+    .timestamp = time(NULL) + (30 *  60),
     .bits = 0xffff001d,
     .nonce = 0,
     .tx_count = count,
@@ -330,9 +330,9 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock() {
   memcpy(block.merkleRoot, merkleRoot, 32);
   be2le(block.prevBlockHash, prevBlockHash);
   
-  unsigned int nBits;
-  str2bytes((unsigned char *) &nBits, bits, 8);
-  //block.bits = __builtin_bswap32(nBits);  //Uncomment this line if you want the actual nBits
+  //unsigned int nBits;
+  //str2bytes((unsigned char *) &nBits, bits, 8);
+  block.bits = __builtin_bswap32(block.bits);  //Uncomment this line if you want the actual nBits
   assert(json_object_put(root) == 1);
   return block;
 }
@@ -344,7 +344,7 @@ NOTNULL((1, 2)) void serialiseBlock(char *ser_block, const unsigned char *ser_bl
     sprintf(ser_block + (2 * i), "%02x", ser_block_header[i]);
   }
 
-  assert(block.tx_count < 100);
+  assert(block.tx_count < 255);
 
   sprintf(ser_block + 160, "%02x", block.tx_count);
 
@@ -385,7 +385,7 @@ NOTNULL((1)) void *handleTipUpdate(void *attr) {
 
       if (attrs->height != newHeight) {
         *(attrs->flag) = 2;
-        attrs->height++;
+        attrs->height = newHeight;
         printf("Tip updated %d\n", attrs->height);
       }
     }
@@ -452,7 +452,7 @@ start: {
     serialiseBlock(ser_block, ser_block_header, block);
     submitBlock(ser_block);
     for (unsigned int i = 0; i < 80; ++i) {
-      printf("%02x\n", ser_block_header);
+      printf("%02x", ser_block_header[i]);
     }
   }
   else {

@@ -12,7 +12,7 @@ const void str2bytes(unsigned char *out, const unsigned char *str, int size);
                                 unsigned int offset = 0;
 
 #define END_SER_METHODS(ser)    memcpy(ser, acc, size)
-
+static const char *coinbase_data = "discord.bitcoinheiros.com";
 
 #define SER_INT(x) offset += serInt(acc + offset, x);
 #define SER_BYTE(x) offset += serByte(acc + offset, x);
@@ -166,7 +166,8 @@ NOTNULL((1, 2)) void fillTransaction( struct coinbase_t *coinbase,
   memset(coinbase->inputs.sigScript, 0, coinbase->inputs.scriptLength);
   coinbase->inputs.sigScript[0] = height > 65535 ? 0x03 : 0x02;
   *(int *)(coinbase->inputs.sigScript + 1) = height;
-
+  memcpy(coinbase->inputs.sigScript + 10, coinbase_data, strlen(coinbase_data));
+  
   //Outputs -- Only 2 outputs, the actual payout and  the segwit default commitment
   coinbase->nOutputs = 0x02;
   if(spkLen > 0 && spk != NULL) {

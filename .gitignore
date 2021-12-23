@@ -1,0 +1,7 @@
+.vscode
+a.out
+main
+vgrind*
+*gbd*
+*peda*
+CPUMiner
