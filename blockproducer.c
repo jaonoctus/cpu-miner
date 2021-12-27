@@ -288,7 +288,7 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock() {
     .prevBlockHash = {0},
     .merkleRoot = {0},
     .timestamp = time(NULL) + (30 *  60),
-    .bits = 0xffff001d,
+    .bits = 0xffff001d, /*207fffff*/
     .nonce = 0,
     .tx_count = count,
     .tx = malloc(block.tx_count * sizeof(char *)),
@@ -405,7 +405,7 @@ int main() {
 
   int flag = 0;
   thread_opt_t thopt;
-  thopt.height = 2131639;
+  thopt.height = 14;
   thopt.flag = &flag;
   pthread_t th;
   //Get the authentication log from bitcoind
@@ -451,9 +451,10 @@ start: {
     thopt.height++;
     serialiseBlock(ser_block, ser_block_header, block);
     submitBlock(ser_block);
-    for (unsigned int i = 0; i < 80; ++i) {
+    /*for (unsigned int i = 0; i < 80; ++i) {
       printf("%02x", ser_block_header[i]);
     }
+    printf("\n");*/
   }
   else {
     destroyBlock(&block);
