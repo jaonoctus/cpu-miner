@@ -4,7 +4,8 @@
 #include <string.h>
 #include <assert.h>
 
-#include "sha2.h"
+#include "transaction.h"
+#include "../sha2.h"
 
 const void str2bytes(unsigned char *out, const unsigned char *str, int size);
 #define NOTNULL(x) __nonnull (x)
@@ -18,31 +19,6 @@ static const char *coinbase_data = "discord.bitcoinheiros.com";
 #define SER_BYTE(x) offset += serByte(acc + offset, x);
 #define SER_BYTEARRAY(x, len) offset += setByteArray(acc + offset, x, len);
 #define SER_LONG(x) offset += serLong(acc + offset, x);
-
-struct input_t {
-  unsigned char previousOutHash[32];
-  unsigned int prevOutIndex;
-  unsigned char scriptLength;
-  unsigned char *sigScript;
-  unsigned int nSequence;
-};
-
-struct output_t {
-  unsigned long value;
-  unsigned char spkLength;
-  unsigned char *spk; 
-};
-
-
-struct coinbase_t
-{
-  unsigned int version;
-  unsigned char nInputs;
-  struct input_t inputs;
-  unsigned int nOutputs;
-  struct output_t *outputs;
-  unsigned int locktime;
-};
 
 int getSerSize(struct coinbase_t coinbase) {
   unsigned int size = 0;

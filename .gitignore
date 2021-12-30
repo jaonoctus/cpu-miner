@@ -1,7 +1,8 @@
 .vscode
 a.out
 main
-vgrind*
+vgcore*
 *gbd*
 *peda*
 CPUMiner
+*asm

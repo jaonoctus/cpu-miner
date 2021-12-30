@@ -1,6 +1,5 @@
 #ifndef MINER_H
 #define MINER_H
-//How many lending 0's, if you want 4 0's, use 0x0000ffff
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -11,7 +10,7 @@
 #include <assert.h>
 
 #include "sha2.h"
-#include "block.h"
+#include "primitives/block.h"
 
 #define THREADS 7
 #define TARGET 0x00000000
