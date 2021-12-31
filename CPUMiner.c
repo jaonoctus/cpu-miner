@@ -27,8 +27,7 @@ typedef struct thread_opt_s {
   int height;
 } thread_opt_t;
 
-static void getCookie(int testNet)
-{
+static void getCookie(int testNet) {
   FILE *fcookie;
   if(testNet)
     fcookie = fopen("/home/erik/.bitcoin/testnet3/.cookie", "r");
@@ -44,6 +43,7 @@ static void getCookie(int testNet)
 NOTNULL((1)) void *handleTipUpdate(void *attr) {
   struct memory readBuffer;
   thread_opt_t *attrs = (thread_opt_t *) attr;
+  time_t nextUpdate = time(NULL) + 10 * 60;
 
   callRPC(&readBuffer, getBlockchaininfo, headers, cookie);
   readBuffer.response[35 + 7] = '\0';
@@ -53,6 +53,7 @@ NOTNULL((1)) void *handleTipUpdate(void *attr) {
   sscanf(readBuffer.response + 35, "%d", &attrs->height);
   printf("Tip: %d\n", attrs->height);
   free(readBuffer.response);
+
   int newHeight;
 
   do {
@@ -65,8 +66,14 @@ NOTNULL((1)) void *handleTipUpdate(void *attr) {
       if (attrs->height != newHeight) {
         *(attrs->flag) = 2;
         attrs->height = newHeight;
+        nextUpdate = time(NULL) + 10 * 60;
         printf("Tip updated %d\n", attrs->height);
       }
+    }
+    
+    if(nextUpdate <= time(NULL)) {
+      *(attrs->flag) = 2;
+      nextUpdate += 10 * 60;
     }
     if(readBuffer.response != NULL)
       free(readBuffer.response);
@@ -112,7 +119,7 @@ start: {
   tryals = 0;
 
   //Serialize the block header as raw data. We only hex-encode for submiting
-  puts("Creating a block");
+  printf("Creating a block with %d txs\n", block.tx_count);
   memcpy(ser_block_header, &block.version, sizeof(int));
   memcpy(ser_block_header + 4, block.prevBlockHash, 32);
   memcpy(ser_block_header + 36, block.merkleRoot, 32);

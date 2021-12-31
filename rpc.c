@@ -6,6 +6,7 @@ NOTNULL((1, 4)) static size_t writeCallback(void *data, size_t size, size_t nmem
   size_t realsize = size * nmemb;
   struct memory *mem = (struct memory *)userp;
   char *ptr;
+  
   if(mem->size == 0) {
     ptr = malloc(mem->size + realsize + 1);
   } else {

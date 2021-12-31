@@ -16,6 +16,11 @@
 #include "blockproducer.h"
 #include "rpc.h"
 
+extern struct curl_slist *headers;
+
+//Bitcoind's auth cookie
+extern char cookie[76]; 
+
 #define GET_I(root,i) json_object_array_get_idx(root, i)
 #define ADD(root, data) json_object_array_add(root, data)
 
@@ -121,12 +126,27 @@ NOTNULL((1)) void destroyBlock(struct block_t *block) {
 __attribute__((__warn_unused_result__)) struct block_t createBlock() {
   struct memory readBuffer;
   
- // callRPC(&readBuffer, getBlockTemplateCmd);
+  callRPC(&readBuffer, getBlockTemplateCmd, headers, cookie);
   assert(readBuffer.size > 0 && readBuffer.response != NULL);
 
   json_object *root = json_tokener_parse(readBuffer.response);
 
-  assert(root != NULL);
+  if (root == NULL) {
+    struct block_t block = {
+      .version = 0x00 ,
+      .prevBlockHash = {0},
+      .merkleRoot = {0},
+      .timestamp = time(NULL) + 1,
+      .bits = 0x207fffff,
+      .nonce = 0,
+      .tx_count = 0,
+      .tx = NULL,
+      .bytes = 0
+    };
+    assert(json_object_put(root) == 1);
+
+    return block;
+  }
   free(readBuffer.response);
 
   //Take everithing we need from a block template
@@ -246,7 +266,7 @@ NOTNULL((1)) void submitBlockHeader(unsigned char block[80]) {
   for (unsigned int i = 0; i < 80; ++i)
     sprintf(ser_block + (2 * i), "%02x", block[i]);
   sprintf(cmd, submitHeader, ser_block);
-  //callRPC(&ret, cmd);
+  callRPC(&ret, cmd, headers, cookie);
 
   if(ret.response == NULL || ret.size <=0) return;
   if(strncmp(ret.response + 23, "null", 4))
@@ -261,7 +281,7 @@ NOTNULL((1)) void submitBlock(unsigned char *block) {
   struct memory ret;
 
   sprintf(cmd, submitBlockBase, block);
-  //callRPC(&ret, cmd);
+  callRPC(&ret, cmd, headers, cookie);
   free(ret.response);
 }
 
