@@ -22,6 +22,7 @@ typedef struct miner_options_s {
   struct curl_slist *headers;
   unsigned int network;
   unsigned short port;
+  unsigned short mineDiff1;
 } miner_options_t;
 
 #include "primitives/block.h"

@@ -45,6 +45,14 @@ void dumpOpts(miner_options_t *opt) {
   printf("  cookie = %s\n", opt->cookie);
   printf("  datadir = %s\n", opt->datadir);
   printf("  spk = %s\n", opt->spk);
+  printf("  actualdiff = %s\n", opt->mineDiff1 == 0? "true" : "false");
+}
+void usage() {
+  puts("./CPUMiner <name> <value> ... <name> <value>");
+  puts("args:");
+  puts(" -datadir <datadir>    Were I can find a .cookie file e.g: \n                        /home/alice/.bitcoin/testnet3/.cookie");
+  puts(" -network <network>    Witch network we are mining on. mainnet, testnet\n                        signet testnet");
+  puts(" -spk <spk>            Generated coins will be sent to spk\n");
 }
 miner_options_t parseArgs(int argc, char **argv) {
   miner_options_t opt = {
@@ -53,6 +61,7 @@ miner_options_t parseArgs(int argc, char **argv) {
     .network = TESTNET,
     .port = PORT_TESTNET,
     .url = "%s@localhost:%d",
+    .mineDiff1 = 1
   };
 
   for (unsigned register int i = 1; i < argc; ++i) {
@@ -60,7 +69,10 @@ miner_options_t parseArgs(int argc, char **argv) {
       printf("Invalid option %s\n", argv[i]);
       exit(EXIT_FAILURE);
     }
-    if(strcmp("-datadir", argv[i]) == 0) {
+    if(strcmp("-actualdiff", argv[i]) == 0) {
+      opt.mineDiff1 = argv[++i][0] == '1'? 0 : 1;
+    }
+    else if(strcmp("-datadir", argv[i]) == 0) {
       if(strlen(argv[++i]) > 100) {
         puts("-datadir too big!");
         exit(EXIT_FAILURE);
@@ -172,7 +184,11 @@ void handle_sigint() {
 int main(int argc, char **argv) {
   puts("Wellcome to my CPU miner");
   puts("(C) Davidson Souza - This software is distributed under MIT licence");
-  puts("Starting...");
+
+  if(argc <= 1) {
+    usage();
+    exit(EXIT_FAILURE);
+  }
 
   miner_options_t opt = parseArgs(argc, argv);
   
@@ -181,16 +197,18 @@ int main(int argc, char **argv) {
 
   struct block_t block;  
   thread_opt_t thopt;
-  
+  if(opt.datadir[0] == 0) {
+    puts("ERROR: -datadir is required");
+    exit(EXIT_FAILURE);
+  }  
+
   flag = 0;
   thopt.height = 14;
   thopt.flag = &flag;
   thopt.opt = &opt;
   pthread_t th;
-  if(opt.datadir[0] == 0) {
-    puts("Required datadir");
-    exit(EXIT_FAILURE);
-  }
+  puts("Starting...");
+
   //Get the authentication log from bitcoind
   getCookie(&opt);
 
