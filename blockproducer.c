@@ -17,16 +17,8 @@
 #include "blockproducer.h"
 #include "rpc.h"
 
-extern struct curl_slist *headers;
-
-//Bitcoind's auth cookie
-extern char cookie[76]; 
-
 #define GET_I(root,i) json_object_array_get_idx(root, i)
 #define ADD(root, data) json_object_array_add(root, data)
-
-//Payout address
-static const char *address  =  (char *) "0014546a43c83cc73cb785ed722ad613f6f3c4a6b3e2";  //A spk, actually
 
 static const unsigned char mask[] = {
                                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -124,10 +116,10 @@ NOTNULL((1)) void destroyBlock(struct block_t *block) {
   }
   free(block->tx);
 }
-__attribute__((__warn_unused_result__)) struct block_t createBlock() {
+__attribute__((__warn_unused_result__)) struct block_t createBlock(miner_options_t *opt) {
   struct memory readBuffer;
   
-  callRPC(&readBuffer, getBlockTemplateCmd, headers, cookie);
+  callRPC(&readBuffer, getBlockTemplateCmd, opt);
   assert(readBuffer.size > 0 && readBuffer.response != NULL);
 
   json_object *root = json_tokener_parse(readBuffer.response);
@@ -187,7 +179,7 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock() {
   /* We need all txIds, for calculating the Merkle Tree */
   //Starting with the coinbase
 
-  fillTransaction(&coinbase, segwitCommit, height, coinbaseValue, address, strlen(address));
+  fillTransaction(&coinbase, segwitCommit, height, coinbaseValue, opt->spk, strlen(opt->spk), opt->coinbaseValue);
   getTransactionId(aux, coinbase);
   memcpy(hashes[0], aux, 32);
 
@@ -261,13 +253,13 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock() {
 }
 
 //Send a header with "submitheader"
-NOTNULL((1)) void submitBlockHeader(unsigned char block[80]) {
+NOTNULL((1)) void submitBlockHeader(unsigned char block[80], miner_options_t *opt) {
   unsigned char cmd[10000], ser_block[(80 * 2) + 1];
   struct memory ret;
   for (unsigned int i = 0; i < 80; ++i)
     sprintf(ser_block + (2 * i), "%02x", block[i]);
   sprintf(cmd, submitHeader, ser_block);
-  callRPC(&ret, cmd, headers, cookie);
+  callRPC(&ret, cmd, opt);
 
   if(ret.response == NULL || ret.size <=0) return;
   if(strncmp(ret.response + 23, "null", 4))
@@ -275,14 +267,14 @@ NOTNULL((1)) void submitBlockHeader(unsigned char block[80]) {
   free(ret.response);
 }
 //Submit a block with "submitblock"
-NOTNULL((1)) void submitBlock(unsigned char *block) {
+NOTNULL((1)) void submitBlock(unsigned char *block, miner_options_t *opt) {
   int cmdLen = strlen(block) + strlen(submitBlockBase) + 500;
   char cmd[cmdLen];
   
   struct memory ret;
 
   sprintf(cmd, submitBlockBase, block);
-  callRPC(&ret, cmd, headers, cookie);
+  callRPC(&ret, cmd, opt);
   free(ret.response);
 }
 

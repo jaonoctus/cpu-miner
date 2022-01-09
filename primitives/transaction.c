@@ -13,7 +13,6 @@ const void str2bytes(unsigned char *out, const unsigned char *str, int size);
                                 unsigned int offset = 0;
 
 #define END_SER_METHODS(ser)    memcpy(ser, acc, size)
-static const char *coinbase_data = "discord.bitcoinheiros.com";
 
 #define SER_INT(x) offset += serInt(acc + offset, x);
 #define SER_BYTE(x) offset += serByte(acc + offset, x);
@@ -128,7 +127,8 @@ NOTNULL((1, 2)) void fillTransaction( struct coinbase_t *coinbase,
                       const unsigned int height,
                       const unsigned int value,
                       const unsigned char *spk,
-                      const unsigned int spkLen
+                      const unsigned int spkLen,
+                      const unsigned char *coinbase_data
                     ) {
   coinbase->version = 1;
   coinbase->nInputs = 0x01;

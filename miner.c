@@ -51,11 +51,11 @@ void affine_to_cpu(int id, int cpu)
 	sched_setaffinity(0, sizeof(&set), &set);
   printf("Biding thread %d to cpu %d\n", id, cpu);
 }
-struct block_t mineCreateBlock() {
+struct block_t mineCreateBlock(miner_options_t *opt) {
   int tryals = 0;
   struct block_t block;
   do {
-    block = createBlock();
+    block = createBlock(opt);
     if(block.version == 0) {
       puts("Something went wrong! Trying again...");
       tryals += 1;
@@ -75,14 +75,14 @@ void mineSerBlockHeader(unsigned char *ser_block_header, struct block_t block) {
   memcpy(ser_block_header + 72, &block.bits, sizeof(int));
   memcpy(ser_block_header + 76, &block.nonce, sizeof(int));
 }
-void mineSubmitBlock(unsigned char *blockBin, struct block_t block) {
-  submitBlockHeader(blockBin);  //Block header
+void mineSubmitBlock(unsigned char *blockBin, struct block_t block, miner_options_t *opt) {
+  submitBlockHeader(blockBin, opt);  //Block header
   unsigned char serBlock[block.bytes * 2 + 100];
 
   serialiseBlock(serBlock, blockBin, block);
-  submitBlock(serBlock);
+  submitBlock(serBlock, opt);
 }
-void mine(int *flag) {
+void mine(int *flag, miner_options_t *opt) {
   pthread_t threads[THREADS];
   worker_attr_t threadAttr[THREADS];
 
@@ -97,10 +97,13 @@ void mine(int *flag) {
   }
 
 start:
-  unsigned char hash[32], blockHeader[80];
+  unsigned char blockHeader[80];
   time_t lastDump = time(NULL);
 
-  struct block_t block = mineCreateBlock();;
+  struct block_t block = mineCreateBlock(opt);
+  if(block.version == 0) {
+    goto start;
+  }
   mineSerBlockHeader(blockHeader, block);
 
   for(unsigned register int i = 0; i < THREADS; ++i) {
@@ -124,7 +127,7 @@ start:
     hashes += (*(struct block_t *) threadAttr[i].block).nonce;
   }
   
-  printf("We done %ld hashes, or %d h/s\n", hashes, hashes/(time(NULL) - lastDump));
+  printf("We made %ld hashes, or %d h/s\n", hashes, hashes/(time(NULL) - lastDump));
   lastDump = time(NULL);
   //Did we find?
   if (*flag == 1) {
@@ -133,7 +136,7 @@ start:
       if(threadAttr[i].ret == 1) {
         printf("Found by: %d\n", i); //Witch thread found it?
         threadAttr[i].ret = 0;
-        mineSubmitBlock(threadAttr[i].block, block);
+        mineSubmitBlock(threadAttr[i].block, block, opt);
       }
     }
   }

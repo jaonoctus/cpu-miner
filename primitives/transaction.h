@@ -31,7 +31,8 @@ void fillTransaction( struct coinbase_t *coinbase,
                       const unsigned int height,
                       const unsigned int value,
                       const unsigned char *spk,
-                      const unsigned int spkLen
+                      const unsigned int spkLen,
+                      const unsigned char *coinbase_data
                     );
 void addNewOutput(struct coinbase_t *coinbase, struct output_t output);
 void destroyTransaction(const struct coinbase_t *transaction);

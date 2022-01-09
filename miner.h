@@ -16,6 +16,7 @@
 
 #include "sha2.h"
 #include "primitives/block.h"
+#include "CPUMiner.h"
 
 #define THREADS 7
 #define TARGET 0x00000000
@@ -44,13 +45,13 @@ NOTNULL((1))
     extern void destroyBlock(struct block_t *block);
 
 NOTNULL((1))
-    void submitBlockHeader(unsigned char block[80]);
+    void submitBlockHeader(unsigned char block[80], miner_options_t *opt);
 
 __attribute__((__warn_unused_result__)) 
     extern struct block_t createBlock();
     
 NOTNULL((1)) 
-    extern void submitBlock(unsigned char *block);
+    extern void submitBlock(unsigned char *block, miner_options_t *opt);
 
 NOTNULL((1, 2)) 
     extern void serialiseBlock(char *ser_block, const unsigned char *ser_block_header, struct block_t block);
@@ -61,5 +62,5 @@ extern void sha256d(unsigned char *out, const unsigned char *src,
 void be2le(unsigned char *out, const unsigned char *in) 
     __THROW __nonnull ((1, 2));
 
-void mine(int *flag);
+void mine(int *flag, miner_options_t *opt);
 #endif //MINER_H

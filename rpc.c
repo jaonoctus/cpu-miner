@@ -1,6 +1,7 @@
 #include <curl/curl.h>
 
 #include "rpc.h"
+#include "CPUMiner.h"
 
 NOTNULL((1, 4)) static size_t writeCallback(void *data, size_t size, size_t nmemb, void *userp) {
   size_t realsize = size * nmemb;
@@ -25,11 +26,10 @@ NOTNULL((1, 4)) static size_t writeCallback(void *data, size_t size, size_t nmem
   return realsize;
 }
 NOTNULL((1, 2)) void callRPC(
-                                     struct memory *out,
-                                     const char *data,
-                                     struct curl_slist *headers,
-                                     const char cookie[76]
-                                  ) {
+                              struct memory *out,
+                              const char *data,
+                              miner_options_t *opt
+                            ) {
   CURL *curl;
   CURLcode res;
 
@@ -43,11 +43,11 @@ NOTNULL((1, 2)) void callRPC(
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
 
     char url[1000] = {0};
-    sprintf(url, "http://%s@127.0.0.1:18332", cookie);
+    sprintf(url, opt->url, opt->cookie, opt->port);
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, out);
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, opt->headers);
     res = curl_easy_perform(curl);
     curl_easy_cleanup(curl);
   }
