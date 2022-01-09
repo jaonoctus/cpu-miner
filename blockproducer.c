@@ -7,6 +7,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <assert.h>
+#include <inttypes.h>
 #include <pthread.h>
 
 #include "primitives/block.h"
@@ -294,10 +295,18 @@ NOTNULL((1, 2)) void serialiseBlock(char *ser_block, const unsigned char *ser_bl
 
   assert(block.tx_count < 255);
 
-  sprintf(ser_block + 160, "%02x", block.tx_count);
+  if (block.tx_count < 0xFD) {
+    sprintf(ser_block + 160, "%02x", block.tx_count);
+    ser_block[162] = 0;
+  } else if (block.tx_count <= 0xFFFF) {
+    sprintf(ser_block + 160, "0xfd%04x", (uint32_t) __builtin_bswap16(block.tx_count));
+    ser_block[164] = 0;
+  }
+  else if (block.tx_count <= 0xFFFFFFFF) {
+    sprintf(ser_block + 160, "0xfe%08x", (uint32_t) __builtin_bswap32(block.tx_count));
+    ser_block[168] = 0;
+  }
 
-  ser_block[162] = 0;
-  
   for (unsigned register int i = 0; i < block.tx_count; ++i) {
     strcat(ser_block, block.tx[i]);
   }
