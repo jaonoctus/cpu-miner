@@ -3,7 +3,7 @@
 
 I like Bitcoin mining, it's a completely new thing, with it's own peculiarities and nuances, and the best way of learning something is dig down and write some code. While CPU mining is no longer profitable, it's not forbidden, one can "mine" with his own CPU and have fun with it. When creating this code, I had two things in mind:  
 1. Learning
-2. Creating a relatively simple codebase for future studies, after all, CPU mining is the oldest way of mining Bitcoin. Bitcoin's Archeology is very fun!  
+2. Creating a relatively simple codebase for future studies, after all, CPU mining is the oldest way of mining Bitcoin. I'm not sure if this was supplied, it started as ~200 lines of C99, but bloated to a multi-file and with thousands of code lines. But it's still understandable (TM).  
 
 ## Why C?
 
@@ -21,7 +21,6 @@ sudo apt-get install libjson-c libcurl
 Clone this repo
 ```bash
 git clone www.github.com/Davidson-Souza/CPUMining.git
-
 ```
 And use `make` to build the project
 ```bash
@@ -30,7 +29,7 @@ make
 ```
 ### Running
 ```bash
-./CPUMiner
+./CPUMiner -datadir <dir> -spk <spk>
 ```
-By default this codebase will try mining on testnet, with the minimum difficulty. If you want to change it, open [blockproducer](/blockproducer.c) and change the port and cookie dir to something else. Regtest uses a port 18443 and cookie's located at `BITCOIN_DIR/regtest/.cookie`.  
-You also may change the diff, it's located inside [miner.h](/miner.h) and is called TARGET, just add a few 'f's at the end. For regtest it can be `0x7fffffff`, but will create blocks too quickly, `0x000fffff` works fine for me.
+
+By default this codebase will try mining on testnet, with the minimum difficulty. You can mine with the testnet's actual difficulty you can use `-actualdiff`. You need a fully synchronized `bitcoind` with `server=1`. Prune is fine. You can use username/password with `-rpcuser=<username>` and `-rpcpassword=<password>` or cookie with `-datadir=<dir>` or `-rpccookie=<cookie>`. You should specify a payout address, right now you should pass a spk rather than an address (laziness). You can find a `spk` with `bitcoin-cli getaddressinfo <address>`, and specify with `-spk=<spk>`. A coinbase value may also be specified with `-coinbasevalue=<data>`.  

@@ -59,7 +59,7 @@ struct block_t mineCreateBlock(miner_options_t *opt) {
     if(block.version == 0) {
       puts("Something went wrong! Trying again...");
       tryals += 1;
-      if (tryals > MAX_RETRY) { exit(EXIT_FAILURE); }
+      if (tryals > MAX_RETRY) { return block; }
     }
   } while (block.version == 0);
   return block;
@@ -102,7 +102,7 @@ start:
 
   struct block_t block = mineCreateBlock(opt);
   if(block.version == 0) {
-    goto start;
+    *flag = 3;  //10 errors in a row? Not good! Request a shutdown
   }
   mineSerBlockHeader(blockHeader, block);
 
@@ -126,8 +126,10 @@ start:
   for (unsigned register int i = 0; i < THREADS; ++i) {
     hashes += (*(struct block_t *) threadAttr[i].block).nonce;
   }
-  
-  printf("We made %ld hashes, or %d h/s\n", hashes, hashes/(time(NULL) - lastDump));
+
+  //Catch some floating point exception
+  if(time(NULL) != lastDump)
+    printf("We made %ld hashes, or %d h/s\n", hashes, hashes/(time(NULL) - lastDump));
   lastDump = time(NULL);
   //Did we find?
   if (*flag == 1) {

@@ -120,8 +120,8 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock(miner_options
   struct memory readBuffer;
   
   callRPC(&readBuffer, getBlockTemplateCmd, opt);
-  assert(readBuffer.size > 0 && readBuffer.response != NULL);
-  if (readBuffer.size == 0) {
+  if (readBuffer.size == 0 || readBuffer.response == NULL) {
+    printf("Couldn't connect to bitcoin\n");
     struct block_t block = {
       .version = 0x00 ,
       .prevBlockHash = {0},
@@ -133,8 +133,11 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock(miner_options
       .tx = NULL,
       .bytes = 0
     };
+    
     return block;
   }
+
+
   json_object *root = json_tokener_parse(readBuffer.response);
 
   if (root == NULL) {
@@ -168,7 +171,7 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock(miner_options
   const unsigned char *prevBlockHashStr = json_object_to_json_string_ext(json_object_object_get(result, "previousblockhash"), 0);
   
   //None of theese can be NULL
-  if (!result || !transactions || !bits || !segwitCommit ) {
+  if ( !result || !transactions || !bits || !segwitCommit ) {
     struct block_t block = {
       .version = 0x00 ,
       .prevBlockHash = {0},
@@ -216,7 +219,7 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock(miner_options
     .prevBlockHash = {0},
     .merkleRoot = {0},
     .timestamp = time(NULL) + (30 *  60),
-    .bits = 0xffff001d, /*207fffff*/
+    .bits = 0xffff001d,
     .nonce = 0,
     .tx_count = count,
     .tx = malloc(block.tx_count * sizeof(char *)),
@@ -258,7 +261,7 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock(miner_options
   memcpy(block.merkleRoot, merkleRoot, 32);
   be2le(block.prevBlockHash, prevBlockHash);
   
-  if (!opt->mineDiff1) {
+  if (!opt->flags & USE_MIN_DIFF) {
     unsigned int nBits;
     str2bytes((unsigned char *) &nBits, bits, 8);
     block.bits = __builtin_bswap32(nBits);

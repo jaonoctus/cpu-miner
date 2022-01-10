@@ -41,14 +41,23 @@ NOTNULL((1, 2)) void callRPC(
     //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, strlen(data));
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
-
     char url[1000] = {0};
-    sprintf(url, opt->url, opt->cookie, opt->port);
+
+    if(opt->flags & USE_RPC_USER_AND_PASSWORD) {
+      //username:password@hostname:port
+      sprintf(url, "%s:%s@%s:%d", opt->rpcUser, opt->rpcPassword, opt->rpcHost, opt->port);
+    }
+    else {
+      //cookie@hostame:port
+      sprintf(url, "%s@%s:%d",opt->cookie, opt->rpcHost, opt->port);
+    }
+
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, out);
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, opt->headers);
     res = curl_easy_perform(curl);
+    assert(res == CURLE_OK);
     curl_easy_cleanup(curl);
   }
 } 

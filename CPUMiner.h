@@ -12,17 +12,24 @@
 #include <assert.h>
 #include <inttypes.h>
 #include <pthread.h>
-
+enum flags {
+  USE_MIN_DIFF = 1 << 0,
+  USE_RPC_USER_AND_PASSWORD = 1 << 1
+};
 typedef struct miner_options_s {
   char spk[70];
   char coinbaseValue[100];  //Like in "Chancellor on brink for seccond ballout for banks"
   char datadir[100];
   char url[100];
+  char rpcPassword[100];
+  char rpcUser[100];
+  char rpcHost[100];
   char cookie[75];
   struct curl_slist *headers;
   unsigned int network;
   unsigned short port;
-  unsigned short mineDiff1;
+  unsigned long flags;
+  
 } miner_options_t;
 
 #include "primitives/block.h"

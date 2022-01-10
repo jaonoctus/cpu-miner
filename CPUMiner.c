@@ -26,6 +26,7 @@ typedef struct thread_opt_s {
   int height;
   miner_options_t *opt;
 } thread_opt_t;
+
 enum PORTS{
   PORT_MAINNET = 8333,
   PORT_TESTNET = 18332,
@@ -45,7 +46,7 @@ void dumpOpts(miner_options_t *opt) {
   printf("  cookie = %s\n", opt->cookie);
   printf("  datadir = %s\n", opt->datadir);
   printf("  spk = %s\n", opt->spk);
-  printf("  actualdiff = %s\n", opt->mineDiff1 == 0? "true" : "false");
+  printf("  actualdiff = %s\n", ! (opt->flags & USE_MIN_DIFF) ? "true" : "false");
 }
 void usage() {
   puts("./CPUMiner <name> <value> ... <name> <value>");
@@ -53,15 +54,18 @@ void usage() {
   puts(" -datadir <datadir>    Were I can find a .cookie file e.g: \n                        /home/alice/.bitcoin/testnet3/.cookie");
   puts(" -network <network>    Witch network we are mining on. mainnet, testnet\n                        signet testnet");
   puts(" -spk <spk>            Generated coins will be sent to spk\n");
+  puts(" -rpchost <host>       A hostname for comunicating with bitcoind\n");
+  puts(" -rpcuser <user>       An user for RPC authentication\n");
+  puts(" -rpcpassword <pass>   A password for RPC authentication\n");
 }
+
 miner_options_t parseArgs(int argc, char **argv) {
   miner_options_t opt = {
     .spk = "0014546a43c83cc73cb785ed722ad613f6f3c4a6b3e2",
     .coinbaseValue = "discord.bitcoinheiros.com",
     .network = TESTNET,
     .port = PORT_TESTNET,
-    .url = "%s@localhost:%d",
-    .mineDiff1 = 1
+    .rpcHost = "localhost"
   };
 
   for (unsigned register int i = 1; i < argc; ++i) {
@@ -69,10 +73,45 @@ miner_options_t parseArgs(int argc, char **argv) {
       printf("Invalid option %s\n", argv[i]);
       exit(EXIT_FAILURE);
     }
+
     if(strcmp("-actualdiff", argv[i]) == 0) {
-      opt.mineDiff1 = argv[++i][0] == '1'? 0 : 1;
+      opt.flags |= argv[++i][0] == '1'?  0 : USE_MIN_DIFF;
     }
-    else if(strcmp("-datadir", argv[i]) == 0) {
+    else if (strcmp("-rpcpassword", argv[i]) == 0) {
+      if(strlen(argv[++i]) > 100) {
+        puts("-rpcpassword too big!");
+        exit(EXIT_FAILURE);        
+      }
+      opt.flags |= USE_RPC_USER_AND_PASSWORD;
+      strcpy(opt.rpcPassword, argv[i]);
+    }
+    else if (strcmp("-rpcuser", argv[i]) == 0) {
+      if(strlen(argv[++i]) > 100) {
+        puts("-rpcuser too big!");
+        exit(EXIT_FAILURE);        
+      }
+      opt.flags |= USE_RPC_USER_AND_PASSWORD;
+      strcpy(opt.rpcUser, argv[i]);
+    }
+    else if (strcmp("-rpchost", argv[i]) == 0) {
+      if(strlen(argv[++i]) > 100) {
+        puts("-rpchost too big!");
+        exit(EXIT_FAILURE);        
+      }
+      strcpy(opt.rpcHost, argv[i]);
+    }
+    else if (strcmp("-rpccookie", argv[i]) == 0) {
+      if (strlen(argv[++i]) > 100) {
+        puts ("-rpccookie too big!");
+        exit (EXIT_FAILURE);        
+      }
+      if (opt.flags & USE_RPC_USER_AND_PASSWORD) {
+        puts ("Using -rpccookie and -rpcuser makes no sense!");
+        exit (EXIT_FAILURE);
+      }
+      strcpy(opt.cookie, argv[i]);
+    }
+    else if (strcmp("-datadir", argv[i]) == 0) {
       if(strlen(argv[++i]) > 100) {
         puts("-datadir too big!");
         exit(EXIT_FAILURE);
@@ -116,7 +155,7 @@ miner_options_t parseArgs(int argc, char **argv) {
       strcpy(opt.coinbaseValue, argv[i]);
     }
     else {
-      puts("Unrecognized option");
+      printf("Unrecognized option %s\n", argv[i]);
       exit(EXIT_FAILURE);
     }
   }
@@ -148,6 +187,7 @@ NOTNULL((1)) void *scheduler(void *attr) {
   free(readBuffer.response);
 
   int newHeight;
+  puts("Scheduler is now working");
 
   do {
     callRPC(&readBuffer, getBlockchaininfo, attrs->opt);
@@ -176,13 +216,13 @@ NOTNULL((1)) void *scheduler(void *attr) {
   } while(*(attrs->flag) == 0);
 }
 
-void handle_sigint() {
+void handle_signal() {
   printf("Shutdown requested\n");
   flag = 3;
 }
 
 int main(int argc, char **argv) {
-  puts("Wellcome to my CPU miner");
+  puts("Welcome to my CPU miner");
   puts("(C) Davidson Souza - This software is distributed under MIT licence");
 
   if(argc <= 1) {
@@ -193,30 +233,41 @@ int main(int argc, char **argv) {
   miner_options_t opt = parseArgs(argc, argv);
   
   opt.headers = curl_slist_append(opt.headers, "Content-Type: application/json");
-  signal(SIGINT, handle_sigint);
+  signal(SIGINT, handle_signal);
+  signal(SIGABRT, handle_signal); //SIGABRT is called on abort() that is called in assert()
 
   struct block_t block;  
   thread_opt_t thopt;
+
   if(opt.datadir[0] == 0) {
     puts("ERROR: -datadir is required");
     exit(EXIT_FAILURE);
   }  
 
+  puts("Starting...");
+
+  //Get the authentication cookie from bitcoind
+  if(!(opt.flags & USE_RPC_USER_AND_PASSWORD)) 
+    getCookie(&opt);
+
+  //Log
+  dumpOpts(&opt);
+  
+  //Check if RPC is working
+  struct memory readBuffer;
+  callRPC(&readBuffer, getBlockchaininfo, &opt);
+  if(readBuffer.response == NULL ||  readBuffer.size == 0) {
+    puts("Failled connecting to RPC");
+    exit(EXIT_FAILURE);
+  }
+
   flag = 0;
   thopt.height = 14;
   thopt.flag = &flag;
   thopt.opt = &opt;
+
   pthread_t th;
-  puts("Starting...");
-
-  //Get the authentication log from bitcoind
-  getCookie(&opt);
-
-  //Log
-  dumpOpts(&opt);
-  puts("Creating a onchain watcher");
-
-  //Create a thread that will monitor the blockchain
+  //Create a thread that will monitor the blockchain and reeschedule things
   pthread_create(&th, NULL, scheduler, &thopt);
   puts("Done!");
   mine(&flag, &opt);
