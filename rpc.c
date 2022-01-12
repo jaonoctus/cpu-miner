@@ -57,7 +57,6 @@ NOTNULL((1, 2)) void callRPC(
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, out);
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, opt->headers);
     res = curl_easy_perform(curl);
-    assert(res == CURLE_OK);
     curl_easy_cleanup(curl);
   }
 } 
