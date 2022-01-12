@@ -17,6 +17,23 @@
 #include "blockproducer.h"
 #include "rpc.h"
 
+#define CREATE_BLOCK_CHECK(var)   if (var == NULL) {  \
+    struct block_t block = {  \
+      .version = 0x00 , \
+      .prevBlockHash = {0},\
+      .merkleRoot = {0},\
+      .timestamp = time(NULL) + 1,\
+      .bits = 0x207fffff,\
+      .nonce = 0,\
+      .tx_count = 0,\
+      .tx = NULL,\
+      .bytes = 0\
+    };\
+    assert(json_object_put(root) == 1);\
+    \
+    return block;\
+  }
+
 #define GET_I(root,i) json_object_array_get_idx(root, i)
 #define ADD(root, data) json_object_array_add(root, data)
 
@@ -140,29 +157,15 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock(miner_options
 
 
   json_object *root = json_tokener_parse(readBuffer.response);
+  
+  CREATE_BLOCK_CHECK(root)
 
-  if (root == NULL) {
-    struct block_t block = {
-      .version = 0x00 ,
-      .prevBlockHash = {0},
-      .merkleRoot = {0},
-      .timestamp = time(NULL) + 1,
-      .bits = 0x207fffff,
-      .nonce = 0,
-      .tx_count = 0,
-      .tx = NULL,
-      .bytes = 0
-    };
-    assert(json_object_put(root) == 1);
-
-    return block;
-  }
   free(readBuffer.response);
 
   //Take everithing we need from a block template
   const json_object *result             = json_object_object_get(root, "result");
-  assert(result != NULL);
-
+  CREATE_BLOCK_CHECK(result)
+  
   const json_object *transactions       = json_object_object_get(result, "transactions");
   const unsigned char *bits             = json_object_get_string(json_object_object_get(result, "bits"));
   const unsigned int coinbaseValue      = json_object_get_uint64(json_object_object_get(result, "coinbasevalue"));
@@ -173,22 +176,10 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock(miner_options
   const unsigned char *prevBlockHashStr = json_object_to_json_string_ext(json_object_object_get(result, "previousblockhash"), 0);
   
   //None of theese can be NULL
-  if ( !result || !transactions || !bits || !segwitCommit ) {
-    struct block_t block = {
-      .version = 0x00 ,
-      .prevBlockHash = {0},
-      .merkleRoot = {0},
-      .timestamp = time(NULL) + 1,
-      .bits = 0x207fffff,
-      .nonce = 0,
-      .tx_count = 0,
-      .tx = NULL,
-      .bytes = 0
-    };
-    assert(json_object_put(root) == 1);
-
-    return block;
-  }
+  CREATE_BLOCK_CHECK(result);
+  CREATE_BLOCK_CHECK(transactions);
+  CREATE_BLOCK_CHECK(bits);
+  CREATE_BLOCK_CHECK(segwitCommit);
 
   // +1 because coinbase
   const unsigned int count = json_object_array_length(transactions) + 1;
