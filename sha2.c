@@ -5,16 +5,19 @@
 /**
  * @brief: Consumes one block
 */
+
+
 void sha_compress(sha_ctx *shaCtx)
 {
     unsigned int w[64] = {0}, s0, s1,ch, temp1, maj, temp2, A, B, C, D, E, F, G, H;
     memcpy(w, shaCtx->block, sizeof(unsigned int ) * 16);
-    
+
     #if __BYTE_ORDER == __LITTLE_ENDIAN
     FOR(16)
     {
         w[i] = __builtin_bswap32(w[i]);
     }
+
     #endif
     for (unsigned int i=16; i<=63; ++i)
     {
@@ -61,6 +64,7 @@ void sha_compress(sha_ctx *shaCtx)
     shaCtx->h[5] += F;
     shaCtx->h[6] += G;
     shaCtx->h[7] += H;
+
     memset(shaCtx->block, 0x00, 64);
 }
 /**
@@ -121,29 +125,214 @@ void sha_finalize(sha_ctx *ctx, unsigned char ret[32])
 
     memcpy(ret, ctx->h, 32); 
 #endif
-
-
 }
+void sha_precompute(unsigned int *h_out,  unsigned char *block) {
+    unsigned int w[64] = {0}, s0, s1,ch, temp1, maj, temp2, A, B, C, D, E, F, G, H;
+    memcpy(w, block, 64);
+    
+    #if __BYTE_ORDER == __LITTLE_ENDIAN
+    FOR(16) {
+        w[i] = __builtin_bswap32(w[i]);
+    }
+    #endif
+    for (unsigned int i=16; i<=63; ++i) {
+        s0 = ROTR(w[i-15], 7) ^ ROTR(w[i-15], 18) ^ (w[i-15] >>  3);
+        s1 = ROTR(w[i- 2],17) ^ ROTR(w[i- 2], 19) ^ (w[i- 2] >> 10);
+        w[i] = w[i-16] + s0 + w[i-7] + s1;
+    }
+    
+    A = h[0];
+    B = h[1];
+    C = h[2];
+    D = h[3];
+    E = h[4];
+    F = h[5];
+    G = h[6];
+    H = h[7];
 
+    /**
+     * @todo: Unroll this loop 
+     **/
+    for(unsigned int i = 0; i<=63; ++i)
+    {
+        s1 = S1();
+        ch = Ch();
+        temp1 = H + s1 + ch + k[i] + w[i];
+        s0 = S0();
+        maj = Ma();
+        temp2 = s0 + maj;
+
+        H = G;
+        G = F;
+        F = E;
+        E = D + temp1;
+        D = C;
+        C = B;
+        B = A;
+        A = temp1 + temp2;
+    }
+
+    h_out[0] = h[0] + A;
+    h_out[1] = h[1] + B;
+    h_out[2] = h[2] + C;
+    h_out[3] = h[3] + D;
+    h_out[4] = h[4] + E;
+    h_out[5] = h[5] + F;
+    h_out[6] = h[6] + G;
+    h_out[7] = h[7] + H;
+}
+void sha_compress_block_header(unsigned int *h_out, unsigned int *h_in, char *block) {
+    unsigned int w[64] = {0}, s0, s1,ch, temp1, maj, temp2, A, B, C, D, E, F, G, H;
+    memcpy(w, block, 64);
+    
+    #if __BYTE_ORDER == __LITTLE_ENDIAN
+    FOR(16) {
+        w[i] = __builtin_bswap32(w[i]);
+    }
+
+    #endif
+    for (unsigned int i=16; i<=63; ++i) {
+        s0 = ROTR(w[i-15], 7) ^ ROTR(w[i-15], 18) ^ (w[i-15] >>  3);
+        s1 = ROTR(w[i- 2],17) ^ ROTR(w[i- 2], 19) ^ (w[i- 2] >> 10);
+        w[i] = w[i-16] + s0 + w[i-7] + s1;
+    }
+    
+    A = h_in[0];
+    B = h_in[1];
+    C = h_in[2];
+    D = h_in[3];
+    E = h_in[4];
+    F = h_in[5];
+    G = h_in[6];
+    H = h_in[7];
+
+    /**
+     * @todo: Unroll this loop 
+     **/
+    for(unsigned int i = 0; i<=63; ++i)
+    {
+        s1 = S1();
+        ch = Ch();
+        temp1 = H + s1 + ch + k[i] + w[i];
+        s0 = S0();
+        maj = Ma();
+        temp2 = s0 + maj;
+
+        H = G;
+        G = F;
+        F = E;
+        E = D + temp1;
+        D = C;
+        C = B;
+        B = A;
+        A = temp1 + temp2;
+    }
+    h_out[0] = h_in[0] + A;
+    h_out[1] = h_in[1] + B;
+    h_out[2] = h_in[2] + C;
+    h_out[3] = h_in[3] + D;
+    h_out[4] = h_in[4] + E;
+    h_out[5] = h_in[5] + F;
+    h_out[6] = h_in[6] + G;
+    h_out[7] = h_in[7] + H;
+}
+void sha_seccond_hash(unsigned int *h_out) {
+    unsigned int w[64] = {0}, s0, s1,ch, temp1, maj, temp2, A, B, C, D, E, F, G, H;
+    memcpy(w, h_out, 32);
+    FOR(8) {
+        w[i] = __builtin_bswap32(w[i]);
+    }
+
+    w[8] = 0x00000080;
+    w[15] = 0x00010000;
+
+    #if __BYTE_ORDER == __LITTLE_ENDIAN
+    FOR(16) {
+        w[i] = __builtin_bswap32(w[i]);
+    }
+    #endif
+    for (unsigned int i=16; i<=63; ++i) {
+        s0 = ROTR(w[i-15], 7) ^ ROTR(w[i-15], 18) ^ (w[i-15] >>  3);
+        s1 = ROTR(w[i- 2],17) ^ ROTR(w[i- 2], 19) ^ (w[i- 2] >> 10);
+        w[i] = w[i-16] + s0 + w[i-7] + s1;
+    }
+    
+    A = h[0];
+    B = h[1];
+    C = h[2];
+    D = h[3];
+    E = h[4];
+    F = h[5];
+    G = h[6];
+    H = h[7];
+
+    /**
+     * @todo: Unroll this loop 
+     **/
+    for(unsigned int i = 0; i<=63; ++i)
+    {
+        s1 = S1();
+        ch = Ch();
+        temp1 = H + s1 + ch + k[i] + w[i];
+        s0 = S0();
+        maj = Ma();
+        temp2 = s0 + maj;
+
+        H = G;
+        G = F;
+        F = E;
+        E = D + temp1;
+        D = C;
+        C = B;
+        B = A;
+        A = temp1 + temp2;
+    }
+
+    h_out[0] = h[0] + A;
+    h_out[1] = h[1] + B;
+    h_out[2] = h[2] + C;
+    h_out[3] = h[3] + D;
+    h_out[4] = h[4] + E;
+    h_out[5] = h[5] + F;
+    h_out[6] = h[6] + G;
+    h_out[7] = h[7] + H;
+}
 #ifdef TEST
 
 int main()
 {
-    char *str = (char *) malloc(1000000);
-    for(unsigned register int i = 0; i<1000000; ++i)
-    {
-        str[i] = 'a';
-    }
-    unsigned char buf[64] = {0};
-    struct sha_ctx ctx;
-    sha_init(&ctx);
-    sha_update(&ctx, str, 1000000);
-    sha_finalize(&ctx, buf);
-    FOR(32)
-    {
-        printf("%02x", buf[i]);
-    }
+    unsigned char block1[128] = {0}, block2[80] = {0};
+    unsigned int hs[8];
+    block1[80] = 0x80;
+    block1[126] = 0x02;
+    block1[127] = 0x80;
+
+    sha_precompute(hs, block1);
+    sha_compress_block_header(hs, hs, block1 + 64);
+    sha_seccond_hash(hs);
+
+    printf("%08x", hs[0]);
+    printf("%08x", hs[1]);
+    printf("%08x", hs[2]);
+    printf("%08x", hs[3]);
+    printf("%08x", hs[4]);
+    printf("%08x", hs[5]);
+    printf("%08x", hs[6]);
+    printf("%08x", hs[7]);
     printf("\n");
-    return 0;
+
+    sha_ctx ctx;
+    unsigned char hash[32];
+    sha_init(&ctx);
+    sha_update(&ctx, block2, 80);
+    sha_finalize(&ctx, hash);
+
+    sha_init(&ctx);
+    sha_update(&ctx, hash, 32);
+    sha_finalize(&ctx, hash);
+        
+    for (unsigned register int i = 0; i < 32; ++i) 
+        printf("%02x", hash[i]);
+    printf("\n");
 }
 #endif  //test

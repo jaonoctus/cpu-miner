@@ -18,15 +18,15 @@
 #include "primitives/block.h"
 #include "CPUMiner.h"
 
-#define THREADS 7
-#define TARGET 0x00000000
+#define THREADS 1
+#define TARGET 0xFFFF0000
 #define WORKER_ATTR_MAGIC 0x10fe9030
 #define NOTNULL(x) __nonnull (x)
 #define MAX_RETRY 10
 
 typedef struct worker_attr_s {
     unsigned int magic;
-    unsigned char block[80];
+    unsigned char block[128];
     unsigned int *flag; //We need stop working
     int ret;    //If I just found a block
     int cpu;    //Witch CPU should we bind to? 

@@ -36,5 +36,7 @@ void sha_compress(sha_ctx *shaCtx);
 void sha_init(sha_ctx *shaCtx);
 void sha_update(sha_ctx *shaCtx, const unsigned char *block, int size);
 void sha_finalize(sha_ctx *ctx, unsigned char ret[32]);
-
+void sha_precompute(unsigned int h_out[8], unsigned char block[64]);
+void sha_compress_block_header(unsigned int h_out[8],unsigned int *h_in, char block[64]);
+void sha_seccond_hash(unsigned int h_out[8]);
 #endif //SHA2_H

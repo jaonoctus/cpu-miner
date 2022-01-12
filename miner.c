@@ -4,28 +4,44 @@
 
 NOTNULL((1)) void *worker(void *attr) {
   assert(attr != NULL);
+  unsigned char hash[32];
   worker_attr_t *attrs = (worker_attr_t *) attr;
-  unsigned int midstate_hash1[8];
-  unsigned char hash[32] = {0};
-  unsigned int w[64] = {0}, s0, s1,ch, temp1, maj, temp2, A, B, C, D, E, F, G, H;
 
-  *attrs->flag = 0;
+  unsigned int hs[8], precomp[8];
+
   //Let's take more processing time, we're greedy :)
   const int pid = gettid();
   affine_to_cpu(pid, attrs->cpu);
 mine:
+  do {
+    sleep(0.1);
+  } while(*attrs->flag != 0);
   assert(attrs->magic == WORKER_ATTR_MAGIC);
-  do{
+  attrs->block[80] = 0x80;
+  attrs->block[126] = 0x02;
+  attrs->block[127] = 0x80;
+  sha_precompute(precomp, attrs->block);
+
+  do {
     ((struct block_t *) attrs->block)->nonce++;
-    sha256d(hash, attrs->block, 80);
-  } while( (*((unsigned int *)(hash + 28))) > TARGET && *attrs->flag == 0 );
+
+    sha_compress_block_header(hs, precomp, attrs->block + 64);
+    sha_seccond_hash(hs);
+  } while( (hs[7] & 0x0000FFFF)  != 0 );
+
   //Keep asserting it, in case of overflow we can catch it easily
   assert(attrs->magic == WORKER_ATTR_MAGIC);
 
   if (*attrs->flag == 0) {
     printf("Found!: ");
-    for (unsigned int i = 0; i < 32; ++i)
-      printf("%02x", hash[i]);
+    printf("%08x", __builtin_bswap32 (hs[7]));
+    printf("%08x", __builtin_bswap32 (hs[6]));
+    printf("%08x", __builtin_bswap32 (hs[5]));
+    printf("%08x", __builtin_bswap32 (hs[4]));
+    printf("%08x", __builtin_bswap32 (hs[3]));
+    printf("%08x", __builtin_bswap32 (hs[2]));
+    printf("%08x", __builtin_bswap32 (hs[1]));
+    printf("%08x", __builtin_bswap32 (hs[0]));
     printf("\n");
     *attrs->flag = 1;
     attrs->ret = 1;
@@ -35,11 +51,7 @@ mine:
     attrs->ret = 0;
     return NULL;
   }
-
-  do {
-    sleep(0.1);
-  } while(*attrs->flag != 0);
-
+  
 goto mine;
 }
 void affine_to_cpu(int id, int cpu)
@@ -85,7 +97,7 @@ void mineSubmitBlock(unsigned char *blockBin, struct block_t block, miner_option
 void mine(int *flag, miner_options_t *opt) {
   pthread_t threads[THREADS];
   worker_attr_t threadAttr[THREADS];
-
+  *flag = 4;  //4 means starting
   for(unsigned register int i = 0; i < THREADS; ++i) {
     //This struct is passed for all threads, this magic number is just
     //a random int that is unlikely to colide, and is verified agaist corruption
@@ -109,11 +121,11 @@ start:
   for(unsigned register int i = 0; i < THREADS; ++i) {
 
     memcpy(threadAttr[i].block, blockHeader, 80);
-
+    memset(threadAttr[i].block + 80, 0x00, 128 - 80);
     //Each block's timestamps are shifted by one, so all workers can try all nonces
     ++((struct block_t *) threadAttr[i].block)->timestamp;
-    threadAttr[i].flag = flag;
   }
+
   *flag = 0;
   //Relax, let your workers do the job
   do {
@@ -139,7 +151,7 @@ start:
         printf("Found by: %d\n", i); //Witch thread found it?
         threadAttr[i].ret = 0;
         mineSubmitBlock(threadAttr[i].block, block, opt);
-      }
+     }
     }
   }
   else {

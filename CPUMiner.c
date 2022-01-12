@@ -176,7 +176,6 @@ NOTNULL((1)) void *scheduler(void *attr) {
   thread_opt_t *attrs = (thread_opt_t *) attr;
   time_t nextUpdate = time(NULL) + 10 * 60;
   attrs->height = 0;
-  *attrs->flag = 0;
   callRPC(&readBuffer, getBlockchaininfo, attrs->opt);
   readBuffer.response[35 + 7] = '\0';
 
@@ -261,7 +260,7 @@ int main(int argc, char **argv) {
     exit(EXIT_FAILURE);
   }
 
-  flag = 0;
+  flag = 4;
   thopt.height = 14;
   thopt.flag = &flag;
   thopt.opt = &opt;
