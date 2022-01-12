@@ -8,6 +8,59 @@
 
 #define FOR(k) for(unsigned int i = 0;i<k; ++i)
 #define S1() (ROTR(E, 6)) ^ (ROTR(E, 11)) ^ (ROTR(E, 25))
+#define ROUND0(i)  s1 = S1();\
+        ch = Ch();\
+        temp1 = H + s1 + ch + k[i] + w[i];\
+        s0 = S0();\
+        maj = Ma();\
+        temp2 = s0 + maj;\
+\
+        H = G;\
+        G = F;\
+        F = E;\
+        E = D + temp1;\
+        D = C;\
+        C = B;\
+        B = A;\
+        A = temp1 + temp2;
+#define ROUND1(i) \
+        w[i] = __builtin_bswap32(w[i]);\
+        s1 = S1();\
+        ch = Ch();\
+        temp1 = H + s1 + ch + k[i] + w[i];\
+        s0 = S0();\
+        maj = Ma();\
+        temp2 = s0 + maj;\
+\
+        H = G;\
+        G = F;\
+        F = E;\
+        E = D + temp1;\
+        D = C;\
+        C = B;\
+        B = A;\
+        A = temp1 + temp2;
+
+#define ROUND2(i)  \
+        s0 = ROTR(w[i-15], 7) ^ ROTR(w[i-15], 18) ^ (w[i-15] >>  3);\
+        s1 = ROTR(w[i- 2],17) ^ ROTR(w[i- 2], 19) ^ (w[i- 2] >> 10);\
+        w[i] = w[i-16] + s0 + w[i-7] + s1;\
+        \
+        s1 = S1();\
+        ch = Ch();\
+        temp1 = H + s1 + ch + k[i] + w[i];\
+        s0 = S0();\
+        maj = Ma();\
+        temp2 = s0 + maj;\
+\
+        H = G;\
+        G = F;\
+        F = E;\
+        E = D + temp1;\
+        D = C;\
+        C = B;\
+        B = A;\
+        A = temp1 + temp2;
 typedef struct sha_ctx_s
 {
     unsigned int h[8];
