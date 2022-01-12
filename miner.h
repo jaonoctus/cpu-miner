@@ -18,7 +18,7 @@
 #include "primitives/block.h"
 #include "CPUMiner.h"
 
-#define THREADS 1
+#define THREADS 7
 #define TARGET 0xFFFF0000
 #define WORKER_ATTR_MAGIC 0x10fe9030
 #define NOTNULL(x) __nonnull (x)

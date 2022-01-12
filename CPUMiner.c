@@ -43,9 +43,29 @@ enum NETWORKS {
 void dumpOpts(miner_options_t *opt) {
   printf("  rpcport = %d\n", opt->port);
   printf("  coinbasevalue = %s\n", opt->coinbaseValue);
-  printf("  cookie = %s\n", opt->cookie);
-  printf("  datadir = %s\n", opt->datadir);
+
+  if(strlen(opt->cookie) > 0)
+    printf("  cookie = %s\n", opt->cookie);
+  if(strlen(opt->datadir) > 0)
+    printf("  datadir = %s\n", opt->datadir);
+  switch(opt->network) {
+    case TESTNET:
+      printf("  network = testnet\n");
+      break;
+    case MAINNET:
+      printf("  network = mainnet\n");
+      break;
+    case REGTEST:
+      printf("  network = regtest\n");
+      break;
+    case SIGNET:
+      printf("  network = signet\n");
+      break;
+  }
+  printf("  url = %s\n", opt->rpcHost);
   printf("  spk = %s\n", opt->spk);
+  if(strlen(opt->rpcUser) > 0)
+    printf("  user = %s\n", opt->rpcUser);
   printf("  actualdiff = %s\n", ! (opt->flags & USE_MIN_DIFF) ? "true" : "false");
 }
 void usage() {
@@ -73,9 +93,8 @@ miner_options_t parseArgs(int argc, char **argv) {
       printf("Invalid option %s\n", argv[i]);
       exit(EXIT_FAILURE);
     }
-
     if(strcmp("-actualdiff", argv[i]) == 0) {
-      opt.flags |= argv[++i][0] == '1'?  0 : USE_MIN_DIFF;
+      opt.flags |= argv[++i][0] == '1'? 0 : USE_MIN_DIFF;
     }
     else if (strcmp("-rpcpassword", argv[i]) == 0) {
       if(strlen(argv[++i]) > 100) {
@@ -237,11 +256,6 @@ int main(int argc, char **argv) {
 
   struct block_t block;  
   thread_opt_t thopt;
-
-  if(opt.datadir[0] == 0) {
-    puts("ERROR: -datadir is required");
-    exit(EXIT_FAILURE);
-  }  
 
   puts("Starting...");
 

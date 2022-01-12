@@ -12,10 +12,12 @@ NOTNULL((1)) void *worker(void *attr) {
   //Let's take more processing time, we're greedy :)
   const int pid = gettid();
   affine_to_cpu(pid, attrs->cpu);
+  
 mine:
   do {
     sleep(0.1);
   } while(*attrs->flag != 0);
+
   assert(attrs->magic == WORKER_ATTR_MAGIC);
   attrs->block[80] = 0x80;
   attrs->block[126] = 0x02;
@@ -27,7 +29,7 @@ mine:
 
     sha_compress_block_header(hs, precomp, attrs->block + 64);
     sha_seccond_hash(hs);
-  } while( (hs[7] & 0x0000FFFF)  != 0 );
+  } while( hs[7] != 0 && *attrs->flag == 0 );
 
   //Keep asserting it, in case of overflow we can catch it easily
   assert(attrs->magic == WORKER_ATTR_MAGIC);

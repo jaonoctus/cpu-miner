@@ -50,7 +50,7 @@ NOTNULL((1, 2)) void sha256d(unsigned char *out, const unsigned char *src, unsig
   sha_init(&ctx);
   sha_update(&ctx, src, size);
   sha_finalize(&ctx, out);
-  
+
   sha_init(&ctx);
   sha_update(&ctx, out, 32);
   sha_finalize(&ctx, out);
@@ -116,6 +116,7 @@ NOTNULL((1)) void destroyBlock(struct block_t *block) {
   }
   free(block->tx);
 }
+//Creates a block if we have a running bitcoind
 __attribute__((__warn_unused_result__)) struct block_t createBlock(miner_options_t *opt) {
   struct memory readBuffer;
   
@@ -167,6 +168,7 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock(miner_options
   const unsigned int coinbaseValue      = json_object_get_uint64(json_object_object_get(result, "coinbasevalue"));
   const unsigned int version            = json_object_get_int(json_object_object_get(result, "version"));
   const unsigned int height             = json_object_get_int(json_object_object_get(result, "height"));
+  const unsigned int minTime            = json_object_get_int(json_object_object_get(result, "mintime"));
   const unsigned char *segwitCommit     = json_object_get_string(json_object_object_get(result, "default_witness_commitment"));
   const unsigned char *prevBlockHashStr = json_object_to_json_string_ext(json_object_object_get(result, "previousblockhash"), 0);
   
@@ -218,7 +220,7 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock(miner_options
     .version = 0x02000000,
     .prevBlockHash = {0},
     .merkleRoot = {0},
-    .timestamp = time(NULL) + (30 *  60),
+    .timestamp = minTime + (30 *  60),
     .bits = 0xffff001d,
     .nonce = 0,
     .tx_count = count,
@@ -261,7 +263,7 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock(miner_options
   memcpy(block.merkleRoot, merkleRoot, 32);
   be2le(block.prevBlockHash, prevBlockHash);
   
-  if (!opt->flags & USE_MIN_DIFF) {
+  if (!(opt->flags & USE_MIN_DIFF)) {
     unsigned int nBits;
     str2bytes((unsigned char *) &nBits, bits, 8);
     block.bits = __builtin_bswap32(nBits);
@@ -269,6 +271,7 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock(miner_options
   else {
     block.bits = __builtin_bswap32(block.bits);
   }
+
   assert(json_object_put(root) == 1);
   return block;
 }
