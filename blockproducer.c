@@ -212,7 +212,7 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock(miner_options
     .prevBlockHash = {0},
     .merkleRoot = {0},
     .timestamp = minTime + (30 *  60),
-    .bits = 0xffff001d,
+    .bits = 0x1d00ffff,
     .nonce = 0,
     .tx_count = count,
     .tx = malloc(block.tx_count * sizeof(char *)),
@@ -254,14 +254,14 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock(miner_options
   memcpy(block.merkleRoot, merkleRoot, 32);
   be2le(block.prevBlockHash, prevBlockHash);
   
-  if (!(opt->flags & USE_MIN_DIFF)) {
+  /*if (!(opt->flags & USE_MIN_DIFF)) {
     unsigned int nBits;
     str2bytes((unsigned char *) &nBits, bits, 8);
     block.bits = __builtin_bswap32(nBits);
   }
   else {
     block.bits = __builtin_bswap32(block.bits);
-  }
+  }*/
 
   assert(json_object_put(root) == 1);
   return block;
