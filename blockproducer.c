@@ -211,7 +211,7 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock(miner_options
     .version = 0x02000000,
     .prevBlockHash = {0},
     .merkleRoot = {0},
-    .timestamp = minTime + (30 *  60),
+    .timestamp = time(NULL) + (30 * 60),
     .bits = 0x1d00ffff,
     .nonce = 0,
     .tx_count = count,
