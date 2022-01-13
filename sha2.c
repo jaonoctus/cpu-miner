@@ -218,13 +218,6 @@ void sha_seccond_hash(unsigned int *h_out) {
 
     w[8] = __builtin_bswap32 (0x00000080);
     w[15] = __builtin_bswap32 (0x00010000);
-
-
-    for (unsigned int i=16; i<=63; ++i) {
-        s0 = ROTR(w[i-15], 7) ^ ROTR(w[i-15], 18) ^ (w[i-15] >>  3);
-        s1 = ROTR(w[i- 2],17) ^ ROTR(w[i- 2], 19) ^ (w[i- 2] >> 10);
-        w[i] = w[i-16] + s0 + w[i-7] + s1;
-    }
     
     A = h[0];
     B = h[1];
@@ -235,27 +228,13 @@ void sha_seccond_hash(unsigned int *h_out) {
     G = h[6];
     H = h[7];
 
-    /**
-     * @todo: Unroll this loop 
-     **/
-    for(unsigned int i = 0; i<=63; ++i)
-    {
-        s1 = S1();
-        ch = Ch();
-        temp1 = H + s1 + ch + k[i] + w[i];
-        s0 = S0();
-        maj = Ma();
-        temp2 = s0 + maj;
-
-        H = G;
-        G = F;
-        F = E;
-        E = D + temp1;
-        D = C;
-        C = B;
-        B = A;
-        A = temp1 + temp2;
-    }
+    ROUND0(0) ROUND0(1) ROUND0(2) ROUND0(3) ROUND0(4) ROUND0(5) ROUND0(6) ROUND0(7) ROUND0(8) ROUND0(9) 
+    ROUND0(10) ROUND0(11) ROUND0(12) ROUND0(13) ROUND0(14) ROUND0(15) ROUND2(16) ROUND2(17) ROUND2(18) ROUND2(19)
+    ROUND2(20) ROUND2(21) ROUND2(22) ROUND2(23) ROUND2(24) ROUND2(25) ROUND2(26) ROUND2(27) ROUND2(28) ROUND2(29)
+    ROUND2(30) ROUND2(31) ROUND2(32) ROUND2(33) ROUND2(34) ROUND2(35) ROUND2(36) ROUND2(37) ROUND2(38) ROUND2(39)
+    ROUND2(40) ROUND2(41) ROUND2(42) ROUND2(43) ROUND2(44) ROUND2(45) ROUND2(46) ROUND2(47) ROUND2(48) ROUND2(49) 
+    ROUND2(50) ROUND2(51) ROUND2(52) ROUND2(53) ROUND2(54) ROUND2(55) ROUND2(56) ROUND2(57) ROUND2(58) ROUND2(59)
+    ROUND2(60) ROUND2(61) ROUND2(62) ROUND2(63)
 
     h_out[0] = h[0] + A;
     h_out[1] = h[1] + B;
