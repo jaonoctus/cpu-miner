@@ -84,6 +84,7 @@ miner_options_t parseArgs(int argc, char **argv) {
     .spk = "0014546a43c83cc73cb785ed722ad613f6f3c4a6b3e2",
     .coinbaseValue = "discord.bitcoinheiros.com",
     .network = TESTNET,
+    .flags = 0,
     .port = PORT_TESTNET,
     .rpcHost = "localhost"
   };
@@ -99,7 +100,7 @@ miner_options_t parseArgs(int argc, char **argv) {
     else if (strcmp("-rpcpassword", argv[i]) == 0) {
       if(strlen(argv[++i]) > 100) {
         puts("-rpcpassword too big!");
-        exit(EXIT_FAILURE);        
+        exit(EXIT_FAILURE);
       }
       opt.flags |= USE_RPC_USER_AND_PASSWORD;
       strcpy(opt.rpcPassword, argv[i]);
@@ -107,7 +108,7 @@ miner_options_t parseArgs(int argc, char **argv) {
     else if (strcmp("-rpcuser", argv[i]) == 0) {
       if(strlen(argv[++i]) > 100) {
         puts("-rpcuser too big!");
-        exit(EXIT_FAILURE);        
+        exit(EXIT_FAILURE);
       }
       opt.flags |= USE_RPC_USER_AND_PASSWORD;
       strcpy(opt.rpcUser, argv[i]);
@@ -115,14 +116,14 @@ miner_options_t parseArgs(int argc, char **argv) {
     else if (strcmp("-rpchost", argv[i]) == 0) {
       if(strlen(argv[++i]) > 100) {
         puts("-rpchost too big!");
-        exit(EXIT_FAILURE);        
+        exit(EXIT_FAILURE);
       }
       strcpy(opt.rpcHost, argv[i]);
     }
     else if (strcmp("-rpccookie", argv[i]) == 0) {
       if (strlen(argv[++i]) > 100) {
         puts ("-rpccookie too big!");
-        exit (EXIT_FAILURE);        
+        exit (EXIT_FAILURE);
       }
       if (opt.flags & USE_RPC_USER_AND_PASSWORD) {
         puts ("Using -rpccookie and -rpcuser makes no sense!");
@@ -199,7 +200,7 @@ NOTNULL((1)) void *scheduler(void *attr) {
   readBuffer.response[35 + 7] = '\0';
 
   if(readBuffer.response == NULL) return (void *) EXIT_FAILURE;
-  
+
   sscanf(readBuffer.response + 35, "%d", &attrs->height);
   printf("Tip: %d\n", attrs->height);
   free(readBuffer.response);
@@ -222,7 +223,7 @@ NOTNULL((1)) void *scheduler(void *attr) {
       }
     }
     if(*attrs->flag == 3) return NULL;
-    
+
     if(nextUpdate <= time(NULL)) {
       *(attrs->flag) = 2;
       nextUpdate += 10 * 60;
@@ -249,23 +250,23 @@ int main(int argc, char **argv) {
   }
 
   miner_options_t opt = parseArgs(argc, argv);
-  
+
   opt.headers = curl_slist_append(opt.headers, "Content-Type: application/json");
   signal(SIGINT, handle_signal);
   signal(SIGABRT, handle_signal); //SIGABRT is called on abort() that is called in assert()
 
-  struct block_t block;  
+  struct block_t block;
   thread_opt_t thopt;
 
   puts("Starting...");
 
   //Get the authentication cookie from bitcoind
-  if(!(opt.flags & USE_RPC_USER_AND_PASSWORD)) 
+  if(!(opt.flags & USE_RPC_USER_AND_PASSWORD))
     getCookie(&opt);
 
   //Log
   dumpOpts(&opt);
-  
+
   //Check if RPC is working
   struct memory readBuffer;
   callRPC(&readBuffer, getBlockchaininfo, &opt);
