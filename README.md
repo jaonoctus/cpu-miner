@@ -39,7 +39,7 @@ By default this codebase will try mining on testnet, with the minimum difficulty
 ### Build the image
 
 ```bash
-docker build -t <YOUR-HANDLE>/cpu-miner
+docker build -t <YOUR-HANDLE>/cpu-miner .
 ```
 
 ### Running the container
