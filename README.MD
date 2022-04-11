@@ -33,3 +33,17 @@ make
 ```
 
 By default this codebase will try mining on testnet, with the minimum difficulty. You can mine with the testnet's actual difficulty you can use `-actualdiff`. You need a fully synchronized `bitcoind` with `server=1`. Prune is fine. You can use username/password with `-rpcuser=<username>` and `-rpcpassword=<password>` or cookie with `-datadir=<dir>` or `-rpccookie=<cookie>`. You should specify a payout address, right now you should pass a spk rather than an address (laziness). You can find a `spk` with `bitcoin-cli getaddressinfo <address>`, and specify with `-spk=<spk>`. A coinbase value may also be specified with `-coinbasevalue=<data>`.  
+
+## Docker
+
+### Build the image
+
+```bash
+docker build -t <YOUR-HANDLE>/cpu-miner
+```
+
+### Running the container
+
+```bash
+docker run --rm -it --name miner jaonoctus/cpu-miner ./CPUMiner -spk 512024a8446601b3caf2776c540f1758b98ecac292bb3a288183ac7b7956f66175e5 -network testnet -rpcuser user -rpcpassword pass -rpchost host.docker.internal -coinbasevalue "@jaonoctus"
+```
