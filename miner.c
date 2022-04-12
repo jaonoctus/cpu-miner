@@ -12,6 +12,7 @@ NOTNULL((1)) void *worker(void *attr) {
   //Let's take more processing time, we're greedy :)
   const int pid = gettid();
   affine_to_cpu(pid, attrs->cpu);
+  nice(1);
   
 mine:
   do {
@@ -29,7 +30,7 @@ mine:
 
     sha_compress_block_header(hs, precomp, attrs->block + 64);
     sha_seccond_hash(hs);
-  } while( hs[7] & 0x000FFFFF && *attrs->flag == 0 );
+  } while( __glibc_likely (__glibc_likely (hs[7] & 0xFFFFFFFF) && *attrs->flag == 0));
 
   //Keep asserting it, in case of overflow we can catch it easily
   assert(attrs->magic == WORKER_ATTR_MAGIC);
@@ -97,10 +98,10 @@ void mineSubmitBlock(unsigned char *blockBin, struct block_t block, miner_option
   submitBlock(serBlock, opt);
 }
 void mine(int *flag, miner_options_t *opt) {
-  pthread_t threads[THREADS];
-  worker_attr_t threadAttr[THREADS];
+  pthread_t threads[opt->threads];
+  worker_attr_t threadAttr[opt->threads];
   *flag = 4;  //4 means starting
-  for(unsigned register int i = 0; i < THREADS; ++i) {
+  for(unsigned register int i = 0; i < opt->threads; ++i) {
     //This struct is passed for all threads, this magic number is just
     //a random int that is unlikely to colide, and is verified agaist corruption
     threadAttr[i].magic = WORKER_ATTR_MAGIC;
@@ -120,7 +121,7 @@ start:
   }
   mineSerBlockHeader(blockHeader, block);
 
-  for(unsigned register int i = 0; i < THREADS; ++i) {
+  for(unsigned register int i = 0; i < opt->threads; ++i) {
 
     memcpy(threadAttr[i].block, blockHeader, 80);
     memset(threadAttr[i].block + 80, 0x00, 128 - 80);
@@ -137,7 +138,7 @@ start:
   //Dump how many hashes we've done
 
   unsigned long int hashes = 0; 
-  for (unsigned register int i = 0; i < THREADS; ++i) {
+  for (unsigned register int i = 0; i < opt->threads; ++i) {
     hashes += (*(struct block_t *) threadAttr[i].block).nonce;
   }
 
@@ -148,7 +149,7 @@ start:
   //Did we find?
   if (*flag == 1) {
     //Let's broadcast it!
-    for(unsigned register int i = 0; i < THREADS; ++i) {
+    for(unsigned register int i = 0; i < opt->threads; ++i) {
       if(threadAttr[i].ret == 1) {
         printf("Found by: %d\n", i); //Witch thread found it?
         threadAttr[i].ret = 0;
@@ -160,7 +161,7 @@ start:
     destroyBlock(&block);
   }
   if (*flag == 3) { //Shutdown requested
-    for(unsigned register int i = 0; i < THREADS; ++i) {
+    for(unsigned register int i = 0; i < opt->threads; ++i) {
       pthread_join(threads[i], NULL);
     }
     return ;    
