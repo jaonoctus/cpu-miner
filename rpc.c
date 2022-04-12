@@ -7,7 +7,7 @@ NOTNULL((1, 4)) static size_t writeCallback(void *data, size_t size, size_t nmem
   size_t realsize = size * nmemb;
   struct memory *mem = (struct memory *)userp;
   char *ptr;
-  
+
   if(mem->size == 0) {
     ptr = malloc(mem->size + realsize + 1);
   } else {
@@ -17,12 +17,12 @@ NOTNULL((1, 4)) static size_t writeCallback(void *data, size_t size, size_t nmem
     printf("Error!\n");
     return 0;  /* out of memory! */
   }
- 
+
   mem->response = ptr;
   memcpy(&(mem->response[mem->size]), data, realsize);
   mem->size += realsize;
   mem->response[mem->size] = 0;
- 
+
   return realsize;
 }
 NOTNULL((1, 2)) void callRPC(
@@ -38,7 +38,7 @@ NOTNULL((1, 2)) void callRPC(
   out->response = NULL;
 
   if(curl) {
-    //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
+    // curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, strlen(data));
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
     char url[1000] = {0};
@@ -59,4 +59,4 @@ NOTNULL((1, 2)) void callRPC(
     res = curl_easy_perform(curl);
     curl_easy_cleanup(curl);
   }
-} 
+}

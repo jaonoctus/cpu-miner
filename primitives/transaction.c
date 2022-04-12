@@ -45,7 +45,7 @@ int getSerSize(struct coinbase_t coinbase) {
 int serByteArray(char *out, const unsigned char *bytes, int len) {
     for (unsigned register int i = 0; i < len; ++i) {
       sprintf(out + (2 * i), "%02x", (__builtin_bswap16(bytes[i]) >> 8));
-    } 
+    }
     return len * 2;
 }
 
@@ -56,7 +56,7 @@ int serInt(char *out, const unsigned int in) {
 int serByte(char *out, const unsigned char in) {
   sprintf(out, "%02x", in);
   return 1 * 2;
-} 
+}
 
 int serLong(char *out, const unsigned long in) {
   sprintf(out, "%08x%08x", ((unsigned  long) __builtin_bswap64(in) >> 32), ((unsigned  long) __builtin_bswap64(in)));
@@ -93,7 +93,7 @@ NOTNULL((1)) int serializeCoinbase(char *acc, struct coinbase_t coinbase) {
   }
 
   SER_BYTE(coinbase.nOutputs)
-  
+
   for (unsigned int i = 0; i < coinbase.nOutputs; ++i) {
     offset += serOutput(acc + offset, coinbase.outputs[i]);
   }
@@ -133,7 +133,7 @@ NOTNULL((1, 2)) void fillTransaction( struct coinbase_t *coinbase,
   coinbase->version = 1;
   coinbase->nInputs = 0x01;
   //Inputs
-  
+
   coinbase->inputs.nSequence = 0xffffff;
   memset(coinbase->inputs.previousOutHash, 0x00, 32);
   coinbase->inputs.prevOutIndex = 0xffffffff;
@@ -143,7 +143,7 @@ NOTNULL((1, 2)) void fillTransaction( struct coinbase_t *coinbase,
   coinbase->inputs.sigScript[0] = height > 65535 ? 0x03 : 0x02;
   *(int *)(coinbase->inputs.sigScript + 1) = height;
   memcpy(coinbase->inputs.sigScript + 10, coinbase_data, strlen(coinbase_data));
-  
+
   //Outputs -- Only 2 outputs, the actual payout and  the segwit default commitment
   coinbase->nOutputs = 0x02;
   if(spkLen > 0 && spk != NULL) {
@@ -172,7 +172,7 @@ NOTNULL((1)) void addNewOutput(struct coinbase_t *coinbase, struct output_t outp
   unsigned int ser_size = 0;
 
   struct output_t outs[coinbase->nOutputs + 1];
-  
+
   for (int i = 0; i < coinbase->nOutputs; ++i) {
     outs[i].value = coinbase->outputs[i].value;
     outs[i].spkLength = coinbase->outputs[i].spkLength;
@@ -181,9 +181,9 @@ NOTNULL((1)) void addNewOutput(struct coinbase_t *coinbase, struct output_t outp
   outs[coinbase->nOutputs].value = output.value;
   outs[coinbase->nOutputs].spkLength = output.spkLength;
   outs[coinbase->nOutputs].spk = output.spk;
-  
+
   coinbase->outputs = realloc(coinbase->outputs, sizeof(struct input_t) * coinbase->nInputs);
-  
+
   coinbase->nOutputs += 1;
   for (int i = 0; i < coinbase->nOutputs; ++i) {
     coinbase->outputs[i].value = outs[i].value;
@@ -211,7 +211,7 @@ NOTNULL((1)) void getTransactionId(unsigned char txId[32], const struct coinbase
   memset(buffer, 0, size);
   serializeCoinbase(buffer, transaction);
   str2bytes(ser_tx, buffer, size + 32);
-  
+
   sha_update(&ctx, ser_tx, (size + 32)/2);
   sha_finalize(&ctx, txId);
 

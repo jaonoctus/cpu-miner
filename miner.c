@@ -13,7 +13,7 @@ NOTNULL((1)) void *worker(void *attr) {
   const int pid = gettid();
   affine_to_cpu(pid, attrs->cpu);
   nice(1);
-  
+
 mine:
   do {
     sleep(0.1);
@@ -54,7 +54,7 @@ mine:
     attrs->ret = 0;
     return NULL;
   }
-  
+
 goto mine;
 }
 void affine_to_cpu(int id, int cpu)
@@ -137,7 +137,7 @@ start:
 
   //Something happend, either us or someone else found a block
   //Dump how many hashes we've done
-  unsigned long int hashes = 0; 
+  unsigned long int hashes = 0;
   for (unsigned register int i = 0; i < opt->threads; ++i) {
     hashes += (*(struct block_t *) threadAttr[i].block).nonce;
   }
@@ -160,12 +160,12 @@ start:
   else {
     destroyBlock(&block);
   }
-  
+
   if (*flag == 3) { //Shutdown requested
     for(unsigned register int i = 0; i < opt->threads; ++i) {
       pthread_join(threads[i], NULL);
     }
-    return ;    
+    return ;
   }
 
 goto start;
