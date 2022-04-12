@@ -1,3 +1,25 @@
+// The MIT License (MIT)
+
+// Copyright (c) 2022 Davidson Souza
+
+//  Permission is hereby granted, free of charge, to any person obtaining a
+//  copy of this software and associated documentation files (the "Software"),
+//  to deal in the Software without restriction, including without limitation
+//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+//  and/or sell copies of the Software, and to permit persons to whom the
+//  Software is furnished to do so, subject to the following conditions:
+//
+//  The above copyright notice and this permission notice shall be included in
+//  all copies or substantial portions of the Software.
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+//  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+//  DEALINGS IN THE SOFTWARE.
+
 #include <pthread.h>
 #include <inttypes.h>
 #include <stdio.h>
@@ -11,7 +33,6 @@
 #include <curl/curl.h>
 #include <signal.h>
 
-
 #include "primitives/block.h"
 #include "miner.h"
 #include "sha2.h"
@@ -20,14 +41,14 @@
 #include "rpc.h"
 #include "CPUMiner.h"
 
-int flag;
+int flag; //TODO: Remove global variable
 typedef struct thread_opt_s {
   int *flag;
   int height;
   miner_options_t *opt;
 } thread_opt_t;
 
-enum PORTS{
+enum PORTS {
   PORT_MAINNET = 8333,
   PORT_TESTNET = 18332,
   PORT_REGTEST = 18443,
@@ -40,14 +61,15 @@ enum NETWORKS {
   REGTEST = 1 << 3,
   SIGNET =  1 << 4
 };
+
 void dumpOpts(miner_options_t *opt) {
   printf("  rpcport = %d\n", opt->port);
   printf("  coinbasevalue = %s\n", opt->coinbaseValue);
 
   if(strlen(opt->cookie) > 0)
     printf("  cookie = %s\n", opt->cookie);
-  if(strlen(opt->datadir) > 0)
-    printf("  datadir = %s\n", opt->datadir);
+  if(strlen(opt->cookiefile) > 0)
+    printf("  cookiefile = %s\n", opt->cookiefile);
   switch(opt->network) {
     case TESTNET:
       printf("  network = testnet\n");
@@ -71,7 +93,7 @@ void dumpOpts(miner_options_t *opt) {
 void usage() {
   puts("./CPUMiner <name> <value> ... <name> <value>");
   puts("args:");
-  puts(" -datadir <datadir>    Were I can find a .cookie file e.g: \n                        /home/alice/.bitcoin/testnet3/.cookie");
+  puts(" -cookiefile <cookiefile>    Were I can find a .cookie file e.g: \n                        /home/alice/.bitcoin/testnet3/.cookie");
   puts(" -network <network>    Witch network we are mining on. mainnet, testnet\n                        signet testnet");
   puts(" -spk <spk>            Generated coins will be sent to spk\n");
   puts(" -rpchost <host>       A hostname for comunicating with bitcoind\n");
@@ -80,30 +102,49 @@ void usage() {
 }
 
 miner_options_t parseArgs(int argc, char **argv) {
+  //Init everithying
   miner_options_t opt = {
     .spk = "0014546a43c83cc73cb785ed722ad613f6f3c4a6b3e2",
     .coinbaseValue = "discord.bitcoinheiros.com",
     .network = TESTNET,
-    .flags = 0,
     .port = PORT_TESTNET,
-    .rpcHost = "localhost"
+    .rpcHost = "localhost",
+    .threads = THREADS,
+    .flags = 0,
+    .cookie = "",
+    .headers = NULL,
+    .rpcPassword = "",
+    .rpcUser = "",
+    .threads = 1,
+    .url = ""
   };
 
   for (unsigned register int i = 1; i < argc; ++i) {
+
     if ((argc - i) == 1 || argv[i][0] != '-') {
       printf("Invalid option %s\n", argv[i]);
       exit(EXIT_FAILURE);
     }
     if(strcmp("-actualdiff", argv[i]) == 0) {
-      opt.flags |= argv[++i][0] == '1'? 0 : USE_MIN_DIFF;
+      opt.flags |= argv[++i][0] == '1' ? 0 : USE_MIN_DIFF;
     }
     else if (strcmp("-rpcpassword", argv[i]) == 0) {
       if(strlen(argv[++i]) > 100) {
         puts("-rpcpassword too big!");
         exit(EXIT_FAILURE);
       }
-      opt.flags |= USE_RPC_USER_AND_PASSWORD;
       strcpy(opt.rpcPassword, argv[i]);
+    }
+    else if (strcmp("-verbose", argv[i]) == 0) {
+      opt.flags |= VERBOSE;
+      ++i;  //Consume a dummy argument
+    }
+    else if (strcmp("-threads", argv[i]) == 0) {
+      sscanf(argv[++i], "%u", &opt.threads);
+      if (opt.threads <= 0) {
+        puts("Invalid number of threads");
+        exit(EXIT_FAILURE);
+      }
     }
     else if (strcmp("-rpcuser", argv[i]) == 0) {
       if(strlen(argv[++i]) > 100) {
@@ -131,12 +172,12 @@ miner_options_t parseArgs(int argc, char **argv) {
       }
       strcpy(opt.cookie, argv[i]);
     }
-    else if (strcmp("-datadir", argv[i]) == 0) {
+    else if (strcmp("-cookiefile", argv[i]) == 0) {
       if(strlen(argv[++i]) > 100) {
-        puts("-datadir too big!");
+        puts("-cookiefile too big!");
         exit(EXIT_FAILURE);
       }
-      strcpy(opt.datadir, argv[i]);
+      strcpy(opt.cookiefile, argv[i]);
     }
     else if(strcmp("-spk", argv[i]) == 0) {
       if(strlen(argv[++i]) > 70) {
@@ -179,11 +220,13 @@ miner_options_t parseArgs(int argc, char **argv) {
       exit(EXIT_FAILURE);
     }
   }
+
   return opt;
 }
+
 static void getCookie(miner_options_t *opt) {
   FILE *fcookie;
-  fcookie = fopen(opt->datadir, "r");
+  fcookie = fopen(opt->cookiefile, "r");
   if(!fcookie) {
     puts("Error reading cookie!");
     exit(EXIT_FAILURE);
@@ -239,6 +282,7 @@ void handle_signal() {
   printf("Shutdown requested\n");
   flag = 3;
 }
+extern int getPreviousBlockTimestamp(miner_options_t *opt, char *str);
 
 int main(int argc, char **argv) {
   puts("Welcome to my CPU miner");
@@ -252,24 +296,26 @@ int main(int argc, char **argv) {
   miner_options_t opt = parseArgs(argc, argv);
 
   opt.headers = curl_slist_append(opt.headers, "Content-Type: application/json");
-  signal(SIGINT, handle_signal);
+
+  signal(SIGINT, handle_signal);  //Gracefully stop
   signal(SIGABRT, handle_signal); //SIGABRT is called on abort() that is called in assert()
 
   struct block_t block;
   thread_opt_t thopt;
 
   puts("Starting...");
-
   //Get the authentication cookie from bitcoind
   if(!(opt.flags & USE_RPC_USER_AND_PASSWORD))
     getCookie(&opt);
 
   //Log
-  dumpOpts(&opt);
+  if (opt.flags & VERBOSE)
+    dumpOpts(&opt);
 
   //Check if RPC is working
   struct memory readBuffer;
   callRPC(&readBuffer, getBlockchaininfo, &opt);
+
   if(readBuffer.response == NULL ||  readBuffer.size == 0) {
     puts("Failled connecting to RPC");
     exit(EXIT_FAILURE);
@@ -279,8 +325,8 @@ int main(int argc, char **argv) {
   thopt.height = 14;
   thopt.flag = &flag;
   thopt.opt = &opt;
-
   pthread_t th;
+
   //Create a thread that will monitor the blockchain and reeschedule things
   pthread_create(&th, NULL, scheduler, &thopt);
   puts("Done!");

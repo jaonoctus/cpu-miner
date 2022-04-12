@@ -14,12 +14,13 @@
 #include <pthread.h>
 enum flags {
   USE_MIN_DIFF = 1 << 0,
-  USE_RPC_USER_AND_PASSWORD = 1 << 1
+  USE_RPC_USER_AND_PASSWORD = 1 << 1,
+  VERBOSE = 1 << 2
 };
 typedef struct miner_options_s {
   char spk[70];
   char coinbaseValue[100];  //Like in "Chancellor on brink for seccond ballout for banks"
-  char datadir[100];
+  char cookiefile[100];
   char url[100];
   char rpcPassword[100];
   char rpcUser[100];
@@ -28,6 +29,7 @@ typedef struct miner_options_s {
   struct curl_slist *headers;
   unsigned int network;
   unsigned short port;
+  unsigned int threads;
   unsigned long flags;
   
 } miner_options_t;

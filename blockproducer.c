@@ -133,11 +133,32 @@ NOTNULL((1)) void destroyBlock(struct block_t *block) {
   }
   free(block->tx);
 }
+
+int getPreviousBlockTimestamp(miner_options_t *opt, const char *block) {
+  struct memory readBuffer;
+  char cmd[1000];
+  sprintf(cmd, getBlock, block);
+  callRPC(&readBuffer, cmd, opt);
+  //It's not critical, just fallback to current time
+  if (readBuffer.response == NULL || readBuffer.size == 0) return time(NULL);
+
+  json_object *root = json_tokener_parse(readBuffer.response);
+  free(readBuffer.response);
+
+  const json_object *result = json_object_object_get(root, "result");
+  const json_object *prevBlockTimestampAsJSONObject = json_object_object_get(result, "time");
+
+  const unsigned int prevBlockTimestamp = json_object_get_int(prevBlockTimestampAsJSONObject);
+  json_object_put(root);
+
+  return prevBlockTimestamp;
+}
 //Creates a block if we have a running bitcoind
 __attribute__((__warn_unused_result__)) struct block_t createBlock(miner_options_t *opt) {
   struct memory readBuffer;
   
   callRPC(&readBuffer, getBlockTemplateCmd, opt);
+  
   if (readBuffer.size == 0 || readBuffer.response == NULL) {
     printf("Couldn't connect to bitcoin\n");
     struct block_t block = {
@@ -173,7 +194,7 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock(miner_options
   const unsigned int height             = json_object_get_int(json_object_object_get(result, "height"));
   const unsigned int minTime            = json_object_get_int(json_object_object_get(result, "mintime"));
   const unsigned char *segwitCommit     = json_object_get_string(json_object_object_get(result, "default_witness_commitment"));
-  const unsigned char *prevBlockHashStr = json_object_to_json_string_ext(json_object_object_get(result, "previousblockhash"), 0);
+  const unsigned char *prevBlockHashStr = json_object_to_json_string_ext(json_object_object_get(result, "previousblockhash"), JSON_C_TO_STRING_PLAIN);
   
   //None of theese can be NULL
   CREATE_BLOCK_CHECK(result);
@@ -211,16 +232,21 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock(miner_options
     .version = 0x02000000,
     .prevBlockHash = {0},
     .merkleRoot = {0},
-    .timestamp = time(NULL) + (30 * 60),
+    .timestamp = getPreviousBlockTimestamp(opt, prevBlockHashStr) + (30 * 60),
     .bits = 0x1d00ffff,
     .nonce = 0,
     .tx_count = count,
     .tx = malloc(block.tx_count * sizeof(char *)),
     .bytes = 0
   };
-  //Coinbase
-  char serTx [getSerSize(coinbase)];
+  //If this fails, this block will be rejected
+  assert(block.timestamp > minTime);
 
+  //Coinbase
+  assert(getSerSize(coinbase) > 0);
+  
+  char serTx [getSerSize(coinbase)];
+  
   const unsigned int ser_size = serializeCoinbase(serTx, coinbase);
   block.tx[0] = (char *) malloc(ser_size + 1 * sizeof(char *));
   block.bytes += ser_size;
@@ -281,6 +307,7 @@ NOTNULL((1)) void submitBlockHeader(unsigned char block[80], miner_options_t *op
     printf("%s\n", ret);
   free(ret.response);
 }
+
 //Submit a block with "submitblock"
 NOTNULL((1)) void submitBlock(unsigned char *block, miner_options_t *opt) {
   int cmdLen = strlen(block) + strlen(submitBlockBase) + 500;
