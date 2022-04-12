@@ -107,7 +107,6 @@ miner_options_t parseArgs(int argc, char **argv) {
     .spk = "0014546a43c83cc73cb785ed722ad613f6f3c4a6b3e2",
     .coinbaseValue = "discord.bitcoinheiros.com",
     .network = TESTNET,
-    .flags = 0,
     .port = PORT_TESTNET,
     .rpcHost = "localhost",
     .threads = THREADS,
