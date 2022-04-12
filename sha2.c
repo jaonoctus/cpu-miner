@@ -181,7 +181,7 @@ void sha_precompute(unsigned int *h_out,  unsigned char *block) {
     h_out[6] = h[6] + G;
     h_out[7] = h[7] + H;
 }
-void sha_compress_block_header(unsigned int *h_out, unsigned int *h_in, char *block) {
+__always_inline sha_compress_block_header(unsigned int *h_out, unsigned int *h_in, char *block) {
     unsigned int w[64] = {0}, s0, s1,ch, temp1, maj, temp2, A, B, C, D, E, F, G, H;
     memcpy(w, block, 64);
     
@@ -212,7 +212,7 @@ void sha_compress_block_header(unsigned int *h_out, unsigned int *h_in, char *bl
     h_out[6] = h_in[6] + G;
     h_out[7] = h_in[7] + H;
 }
-void sha_seccond_hash(unsigned int *h_out) {
+__always_inline void sha_seccond_hash(unsigned int *h_out) {
     unsigned int w[64] = {0}, s0, s1,ch, temp1, maj, temp2, A, B, C, D, E, F, G, H;
     memcpy(w, h_out, 32);
 

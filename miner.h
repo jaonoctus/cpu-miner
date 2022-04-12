@@ -19,7 +19,7 @@
 #include "CPUMiner.h"
 
 #define THREADS 7
-#define TARGET 0xFFFF0000
+#define TARGET 0x00000000
 #define WORKER_ATTR_MAGIC 0x10fe9030
 #define NOTNULL(x) __nonnull (x)
 #define MAX_RETRY 10
