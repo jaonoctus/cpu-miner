@@ -29,7 +29,7 @@ make
 ```
 ### Running
 ```bash
-./CPUMiner -datadir <dir> -spk <spk>
+./CPUMiner -cookiefile <dir> -spk <spk>
 ```
 
-By default this codebase will try mining on testnet, with the minimum difficulty. You can mine with the testnet's actual difficulty you can use `-actualdiff`. You need a fully synchronized `bitcoind` with `server=1`. Prune is fine. You can use username/password with `-rpcuser=<username>` and `-rpcpassword=<password>` or cookie with `-datadir=<dir>` or `-rpccookie=<cookie>`. You should specify a payout address, right now you should pass a spk rather than an address (laziness). You can find a `spk` with `bitcoin-cli getaddressinfo <address>`, and specify with `-spk=<spk>`. A coinbase value may also be specified with `-coinbasevalue=<data>`.  
+By default this codebase will try mining on testnet, with the minimum difficulty. You can mine with the testnet's actual difficulty you can use `-actualdiff`. You need a fully synchronized `bitcoind` with `server=1`. Prune is fine. You can use username/password with `-rpcuser=<username>` and `-rpcpassword=<password>` or cookie with `-cookiefile=<dir>` or `-rpccookie=<cookie>`. You should specify a payout address, right now you should pass a spk rather than an address (laziness). You can find a `spk` with `bitcoin-cli getaddressinfo <address>`, and specify with `-spk=<spk>`. A coinbase value may also be specified with `-coinbasevalue=<data>`.  
