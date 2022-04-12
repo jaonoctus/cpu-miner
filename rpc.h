@@ -13,7 +13,7 @@ struct memory {
 //Some useful constants that will be used during rpc stuff
 static const char *getBlockchaininfo   =  (char *) "{\"jsonrpc\":\"1.0\",\"id\":\"curltext\",\"method\":\"getblockchaininfo\",\"params\":[]}";
 static const char *getBlockTemplateCmd =  (char *) "{\"jsonrpc\":\"1.0\",\"id\":\"curltext\",\"method\":\"getblocktemplate\",\"params\":[{\"rules\":[\"segwit\"]}]}";
-static const char *getBlock            =  (char *) "{\"jsonrpc\":\"1.0\",\"id\":\"curltext\",\"method\":\"getblock\",\"params\":[\"%s\"]}";
+static const char *getBlock            =  (char *) "{\"jsonrpc\":\"1.0\",\"id\":\"curltext\",\"method\":\"getblock\",\"params\":[\"%64s]}";
 static const char *submitHeader        =  (char *) "{\"jsonrpc\":\"1.0\",\"id\":\"curltext\",\"method\":\"submitheader\",\"params\":[\"%s\"]}";
 static const char *submitBlockBase     =  (char *) "{\"jsonrpc\":\"1.0\",\"id\":\"curltext\",\"method\":\"submitblock\",\"params\":[\"%s\"]}";
 

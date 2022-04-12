@@ -102,6 +102,7 @@ void usage() {
 }
 
 miner_options_t parseArgs(int argc, char **argv) {
+  //Init everithying
   miner_options_t opt = {
     .spk = "0014546a43c83cc73cb785ed722ad613f6f3c4a6b3e2",
     .coinbaseValue = "discord.bitcoinheiros.com",
@@ -110,9 +111,16 @@ miner_options_t parseArgs(int argc, char **argv) {
     .rpcHost = "localhost",
     .threads = THREADS,
     .flags = 0,
+    .cookie = "",
+    .headers = NULL,
+    .rpcPassword = "",
+    .rpcUser = "",
+    .threads = 1,
+    .url = ""
   };
 
   for (unsigned register int i = 1; i < argc; ++i) {
+    
     if ((argc - i) == 1 || argv[i][0] != '-') {
       printf("Invalid option %s\n", argv[i]);
       exit(EXIT_FAILURE);
@@ -129,10 +137,14 @@ miner_options_t parseArgs(int argc, char **argv) {
     }
     else if (strcmp("-verbose", argv[i]) == 0) {
       opt.flags |= VERBOSE;
-      ++i;
+      ++i;  //Consume a dummy argument
     }
     else if (strcmp("-threads", argv[i]) == 0) {
       sscanf(argv[++i], "%u", &opt.threads);
+      if (opt.threads <= 0) {
+        puts("Invalid number of threads");
+        exit(EXIT_FAILURE);
+      }
     }
     else if (strcmp("-rpcuser", argv[i]) == 0) {
       if(strlen(argv[++i]) > 100) {
@@ -270,11 +282,12 @@ void handle_signal() {
   printf("Shutdown requested\n");
   flag = 3;
 }
+extern int getPreviousBlockTimestamp(miner_options_t *opt, char *str);
 
 int main(int argc, char **argv) {
   puts("Welcome to my CPU miner");
   puts("(C) Davidson Souza - This software is distributed under MIT licence");
-  
+
   if(argc <= 1) {
     usage();
     exit(EXIT_FAILURE);

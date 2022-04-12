@@ -115,14 +115,14 @@ start:
   unsigned char blockHeader[80];
   time_t lastDump = time(NULL);
 
-  struct block_t block = mineCreateBlock(opt);
+  struct block_t block = mineCreateBlock(opt);  //This function tryies to create a block 10 times
   if(block.version == 0) {
     *flag = 3;  //10 errors in a row? Not good! Request a shutdown
   }
+  //Obtain a block header to mine
   mineSerBlockHeader(blockHeader, block);
 
   for(unsigned register int i = 0; i < opt->threads; ++i) {
-
     memcpy(threadAttr[i].block, blockHeader, 80);
     memset(threadAttr[i].block + 80, 0x00, 128 - 80);
     //Each block's timestamps are shifted by one, so all workers can try all nonces
@@ -130,13 +130,13 @@ start:
   }
 
   *flag = 0;
-  //Relax, let your workers do the job
+  //Relax, take a cup of tea, and let your workers do the job
   do {
     sleep(0.1);
   } while(*flag == 0);
+
   //Something happend, either us or someone else found a block
   //Dump how many hashes we've done
-
   unsigned long int hashes = 0; 
   for (unsigned register int i = 0; i < opt->threads; ++i) {
     hashes += (*(struct block_t *) threadAttr[i].block).nonce;
@@ -151,7 +151,7 @@ start:
     //Let's broadcast it!
     for(unsigned register int i = 0; i < opt->threads; ++i) {
       if(threadAttr[i].ret == 1) {
-        printf("Found by: %d\n", i); //Witch thread found it?
+        printf("Found by: %d\n", i); //Log: Witch thread found it?
         threadAttr[i].ret = 0;
         mineSubmitBlock(threadAttr[i].block, block, opt);
      }
@@ -160,6 +160,7 @@ start:
   else {
     destroyBlock(&block);
   }
+  
   if (*flag == 3) { //Shutdown requested
     for(unsigned register int i = 0; i < opt->threads; ++i) {
       pthread_join(threads[i], NULL);
