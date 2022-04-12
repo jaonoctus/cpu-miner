@@ -239,9 +239,14 @@ __attribute__((__warn_unused_result__)) struct block_t createBlock(miner_options
     .tx = malloc(block.tx_count * sizeof(char *)),
     .bytes = 0
   };
-  //Coinbase
-  char serTx [getSerSize(coinbase)];
+  //If this fails, this block will be rejected
+  assert(block.timestamp > minTime);
 
+  //Coinbase
+  assert(getSerSize(coinbase) > 0);
+  
+  char serTx [getSerSize(coinbase)];
+  
   const unsigned int ser_size = serializeCoinbase(serTx, coinbase);
   block.tx[0] = (char *) malloc(ser_size + 1 * sizeof(char *));
   block.bytes += ser_size;
